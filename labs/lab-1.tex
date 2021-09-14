@@ -1,0 +1,119 @@
+\documentclass[
+  coursecode={CISC/CMPE 365},
+  assignmentname={Lab 1},
+  studentnumber=20053722,
+  name={Bryan Hoang}
+]{
+  ltxanswer%
+}
+
+\marksnotpoints{}
+\renewcommand{\questionlabel}{\textbf{Question:}}
+\renewcommand{\questionshook}{
+  \setlength{\leftmargin}{0pt}
+  \setlength{\labelwidth}{-\labelsep}%
+}
+\renewcommand{\solutiontitle}{
+  \noindent\textbf{Answer:}
+}
+
+\usepackage{bch-style}
+
+\begin{document}
+  \section*{Yes or no}
+  \begin{questions}
+    \question{}
+    Is \(\log^{k}{n} \in \mathcal{O}(n), \forall k \ge 1\)?
+    \begin{solution}
+      Yes.
+    \end{solution}
+    \question{}
+    Is \(\sqrt{n} \in \mathcal{O}(\log{n})\)?
+    \begin{solution}
+      No.
+    \end{solution}
+    \question{}
+    Is \(n^{k} \in \mathcal{O}(2^{n}), \forall k \ge 1\)?
+    \begin{solution}
+      Yes.
+    \end{solution}
+  \end{questions}
+
+  \section*{Problems and algorithms}
+  Suppose all algorithms that solve a particular problem are in \(\Omega(n^{3})\).
+
+  What is the strongest statement (of those below) that can be made about the fastest algorithm that solves this problem in time \(f(n)\)?
+  \begin{questions}
+    \question{}
+    \(f(n) \in \mathcal{O}(n^{3})\)
+    \begin{solution}
+      Not necessarily true, since we don't know if the best algorithm will take \(n^{3}\) time. The upper bound also needs to be proved separately.
+    \end{solution}
+    \question{}
+    \(f(n) \in \Theta(n^{3})\)
+    \begin{solution}
+      Can't claim this to be true, since we can't claim the previous statement for the reasons stated.
+    \end{solution}
+    \question{}
+    \(f(n) \in \Omega(n^{3})\)
+    \begin{solution}
+      True, based on the premise of the question (i.e., \(f(n)\) is asymptotically lower bounded in \(n^{3}\) time)
+    \end{solution}
+  \end{questions}
+
+  \section*{Tail recursion}
+  \begin{questions}
+    \question{}
+    What is the tightest asymptotic complexity of
+    \begin{equation*}
+      T(n) = \begin{cases}
+        c & \text{if}\ n \in \integers_{< 1}, \\
+        0 & \text{otherwise}.
+      \end{cases}
+    \end{equation*}
+    \begin{solution}
+      \(T(n) \in \mathcal{O}(nf(n))\). Unless we know what \(f(n)\) is, we can't say for sure if \(T(n) \in \BigO(f(n))\). If \(f(n)\) is some constant, then we could say that \(T(n) \in \BigO(n)\).
+    \end{solution}
+  \end{questions}
+
+  \section*{More general recursion}
+  What is the tightest asymptotic complexity of
+  \begin{equation*}
+    T(n) = \begin{cases}
+      c                   & \text{if}\ n \in \integers_{\le 1}, \\
+      n + aT(\frac{n}{b}) & \text{otherwise}.
+    \end{cases}
+  \end{equation*}
+  \begin{questions}
+    \question{}
+    When \((a, b) = (2, 4)\)?
+    \begin{solution}
+      \(T(n) \in \BigO()\).
+    \end{solution}
+    \question{}
+    When \((a, b) = (3, 3)\)?
+    \begin{solution}
+      \(T(n) \in \BigO()\).
+    \end{solution}
+    \question{}
+    When \((a, b) = (4, 2)\)?
+    \begin{solution}
+      \(T(n) \in \BigO()\).
+    \end{solution}
+  \end{questions}
+
+  \section*{Tightest bound}
+  \begin{questions}
+    \question{}
+    What is the tightest asymptotic complexity (from the list below) of
+    \begin{equation*}
+      T(n) = \begin{cases}
+        c                   & \text{if}\ n \in \integers_{\le 2}, \\
+        T(n - 1) + T(n - 2) & \text{otherwise}.
+      \end{cases}
+    \end{equation*}
+    \begin{solution}
+      \(T(n) \in \BigO()\).
+    \end{solution}
+  \end{questions}
+\end{document}
