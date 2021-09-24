@@ -1,1 +1,1 @@
-# cmpe-365
+# cmpe-365-assignments
