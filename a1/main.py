@@ -8,10 +8,8 @@
 #
 #   PyOpenGL, GLFW
 
-
 import math
 import sys
-from typing import List, Optional
 
 try:  # PyOpenGL
     from OpenGL.GL import (
@@ -24,6 +22,7 @@ try:  # PyOpenGL
         GL_POINT_FADE_THRESHOLD_SIZE,
         GL_POLYGON,
         GL_PROJECTION,
+        GL_TRUE,
         glBegin,
         glClear,
         glClearColor,
@@ -45,7 +44,6 @@ except:
     print("Error: GLFW has not been installed.")
     sys.exit(0)
 
-
 # Point
 #
 # A Point stores its coordinates and pointers to the two points beside
@@ -55,13 +53,12 @@ except:
 # For debugging, you can set the 'highlight' flag of a point.  This
 # will cause the point to be highlighted when it's drawn.
 class Point(object):
-    def __init__(self, coords: List[bytes]):
-
+    def __init__(self, coords: list[bytes]):
         self.x = float(coords[0])  # coordinates
         self.y = float(coords[1])
 
-        self.ccwPoint: Optional[Point] = None  # point CCW of this on hull
-        self.cwPoint: Optional[Point] = None  # point CW of this on hull
+        self.ccwPoint: Point = None  # point CCW of this on hull
+        self.cwPoint: Point = None  # point CW of this on hull
 
         self.highlight = False  # to cause drawing to highlight this point
 
@@ -69,9 +66,7 @@ class Point(object):
         return "pt(%g,%g)" % (self.x, self.y)
 
     def drawPoint(self):
-
         # Highlight with yellow fill
-
         if self.highlight:
             glColor3f(0.9, 0.9, 0.4)
             glBegin(GL_POLYGON)
@@ -80,7 +75,6 @@ class Point(object):
             glEnd()
 
         # Outline the point
-
         glColor3f(0, 0, 0)
         glBegin(GL_LINE_LOOP)
         for theta in thetas:
@@ -117,7 +111,7 @@ thetas = [
     i / float(numAngles) * 2 * 3.14159 for i in range(numAngles)
 ]  # used for circle drawing
 
-allPoints: List[Point] = []  # list of points
+allPoints: list[Point] = []  # list of points
 
 lastKey = None  # last key pressed
 
@@ -166,10 +160,9 @@ RIGHT_TURN = 2
 COLLINEAR = 3
 
 
-def turn(a, b, c):
-
+def turn(a: Point, b: Point, c: Point):
+    # Calculate the determinant of the vectors formed by ab and bc.
     det = (a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y)
-
     if det > 0:
         return LEFT_TURN
     elif det < 0:
@@ -181,13 +174,34 @@ def turn(a, b, c):
 # Build a convex hull from a set of point
 #
 # Use the method described in class
-
-
 def buildHull(points):
-
     # Handle base cases of two or three points
     #
     # [YOUR CODE HERE]
+
+    if len(points) == 2:
+        # Set CW and CCW attributes to each other
+        points[0].cwPoint = points[1]
+        points[0].ccwPoint = points[1]
+        points[1].cwPoint = points[0]
+        points[1].ccwPoint = points[0]
+    if len(points) == 3:
+        # Check if points form a left turn
+        if turn(points[0], points[1], points[2]) == LEFT_TURN:
+            points[0].ccwPoint = points[1]
+            points[0].cwPoint = points[2]
+            points[1].ccwPoint = points[2]
+            points[1].cwPoint = points[0]
+            points[2].ccwPoint = points[0]
+            points[2].cwPoint = points[1]
+        # Else they must form a right turn (ignore colinear case)
+        else:
+            points[0].cwPoint = points[1]
+            points[0].ccwPoint = points[2]
+            points[1].cwPoint = points[2]
+            points[1].ccwPoint = points[0]
+            points[2].cwPoint = points[0]
+            points[2].ccwPoint = points[1]
 
     # Handle recursive case.
     #
@@ -214,15 +228,14 @@ def buildHull(points):
     #
     # Always after you have inspected things, you should remove the
     # highlighting from the points that you previously highlighted.
-
     for p in points:
         p.highlight = True
+        # Unindent to skip over highlighting individual points by pressing `p`
         display(wait=True)
 
     # At the very end of buildHull(), you should display the result
     # after every merge, as shown below.  This call to display() does
     # not pause.
-
     display()
 
 
@@ -234,18 +247,13 @@ windowBottom: float
 
 
 # Set up the display and draw the current image
-
-
 def display(wait=False):
-
     global lastKey, windowLeft, windowRight, windowBottom, windowTop
 
     # Handle any events that have occurred
-
     glfw.poll_events()
 
     # Set up window
-
     glClearColor(1, 1, 1, 0)
     glClear(GL_COLOR_BUFFER_BIT)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -270,12 +278,10 @@ def display(wait=False):
     glOrtho(windowLeft, windowRight, windowBottom, windowTop, 0, 1)
 
     # Draw points and hull
-
     for p in allPoints:
         p.drawPoint()
 
     # Show window
-
     glfw.swap_buffers(window)
 
     # Maybe wait until the user presses 'p' to proceed
@@ -283,8 +289,11 @@ def display(wait=False):
         sys.stderr.write('Press "p" to proceed ')
         sys.stderr.flush()
         lastKey = None
-        while lastKey != 80:  # wait for 'p'
+        # wait for 'p'
+        while lastKey != 80:
             glfw.wait_events()
+            if glfw.window_should_close(window):
+                sys.exit(0)
             display()
 
         sys.stderr.write("\r                     \r")
@@ -292,23 +301,22 @@ def display(wait=False):
 
 
 # Handle keyboard input
-
-
 def keyCallback(window, key, scancode, action, mods):
-
     global lastKey
 
     if action == glfw.PRESS:
-
-        if key == glfw.KEY_ESCAPE:  # quit upon ESC
-            sys.exit(0)
+        # quit upon ESC
+        if key == glfw.KEY_ESCAPE:
+            # The command below wasn't closing the program properly. Professor
+            # Stewart suggested an alternative.
+            #
+            # sys.exit(0)
+            glfw.set_window_should_close(window, GL_TRUE)
         else:
             lastKey = key
 
 
 # Handle window reshape
-
-
 def windowReshapeCallback(window, newWidth, newHeight):
 
     global windowWidth, windowHeight
@@ -318,14 +326,10 @@ def windowReshapeCallback(window, newWidth, newHeight):
 
 
 # Handle mouse click/release
-
-
 def mouseButtonCallback(window, btn, action, keyModifiers):
-
     if action == glfw.PRESS:
 
         # Find point under mouse
-
         x, y = glfw.get_cursor_pos(window)  # mouse position
 
         wx = (x - 0) / float(windowWidth) * (windowRight - windowLeft) + windowLeft
@@ -342,20 +346,16 @@ def mouseButtonCallback(window, btn, action, keyModifiers):
                 minPoint = p
 
         # print point and toggle its highlight
-
         if minPoint:
             minPoint.highlight = not minPoint.highlight
             print(minPoint)
 
 
 # Initialize GLFW and run the main event loop
-
-
 def main():
     global window, allPoints, minX, maxX, minY, maxY, r, discardPoints
 
     # Check command-line args
-
     if len(sys.argv) < 2:
         print("Usage: %s filename" % sys.argv[0])
         sys.exit(1)
@@ -368,7 +368,6 @@ def main():
         args = args[1:]
 
     # Set up window
-
     if not glfw.init():
         print("Error: GLFW failed to initialize")
         sys.exit(1)
@@ -387,34 +386,32 @@ def main():
     glfw.set_mouse_button_callback(window, mouseButtonCallback)
 
     # Read the points
-
     with open(args[0], "rb") as f:
         allPoints = [Point(line.split(b" ")) for line in f.readlines()]
 
     # Get bounding box of points
-
     minX = min(p.x for p in allPoints)
     maxX = max(p.x for p in allPoints)
     minY = min(p.y for p in allPoints)
     maxY = max(p.y for p in allPoints)
 
     # Adjust point radius in proportion to bounding box
-
     if maxX - minX > maxY - minY:
         r *= maxX - minX
     else:
         r *= maxY - minY
 
     # Sort by increasing x.  For equal x, sort by increasing y.
-
     allPoints.sort(key=lambda p: (p.x, p.y))
 
-    # Run the code
+    # Testing the base cases for 2/3 points
+    # allPoints = [allPoints[0], allPoints[-1]]
+    allPoints = [allPoints[0], allPoints[len(allPoints) // 2], allPoints[-1]]
 
+    # Run the code
     buildHull(allPoints)
 
     # Wait to exit
-
     while not glfw.window_should_close(window):
         glfw.wait_events()
 
