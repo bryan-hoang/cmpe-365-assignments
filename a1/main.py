@@ -174,7 +174,7 @@ def turn(a: Point, b: Point, c: Point):
 # Build a convex hull from a set of point
 #
 # Use the method described in class
-def buildHull(points):
+def buildHull(points: list[Point]):
     # Handle base cases of two or three points
     #
     # [YOUR CODE HERE]
@@ -185,7 +185,9 @@ def buildHull(points):
         points[0].ccwPoint = points[1]
         points[1].cwPoint = points[0]
         points[1].ccwPoint = points[0]
-    if len(points) == 3:
+        display(wait=True)
+        return
+    elif len(points) == 3:
         # Check if points form a left turn
         if turn(points[0], points[1], points[2]) == LEFT_TURN:
             points[0].ccwPoint = points[1]
@@ -202,6 +204,8 @@ def buildHull(points):
             points[1].ccwPoint = points[0]
             points[2].cwPoint = points[0]
             points[2].ccwPoint = points[1]
+        display(wait=True)
+        return
 
     # Handle recursive case.
     #
@@ -211,6 +215,45 @@ def buildHull(points):
     # from interior points disappear after you do this.
     #
     # [YOUR CODE HERE]
+    # Split points by x value (this is trivial because the points are sorted)
+    left_points = points[0 : len(points) // 2]
+    right_points = points[len(points) // 2 : len(points)]
+    buildHull(left_points)
+    buildHull(right_points)
+    # Merge the individual hulls
+    # Walk up
+    l = left_points[-1]
+    r = right_points[0]
+    while turn(l.ccwPoint, l, r) == LEFT_TURN or turn(l, r, r.cwPoint) == LEFT_TURN:
+        if turn(l.ccwPoint, l, r) == LEFT_TURN:
+            l = l.ccwPoint
+        else:
+            r = r.cwPoint
+
+    # Save references to points for top segment, to prevent modifying original
+    # `l` and `r` points before walk down algorithm occurs.
+    top_left = l
+    top_right = r
+
+    # Walk down
+    l = left_points[-1]
+    r = right_points[0]
+    while turn(l.cwPoint, l, r) == RIGHT_TURN or turn(l, r, r.ccwPoint) == RIGHT_TURN:
+        if turn(l.cwPoint, l, r) == RIGHT_TURN:
+            l = l.cwPoint
+        else:
+            r = r.ccwPoint
+
+    # Saving reference to point points for consistency/readability (can be
+    # refactored to remove 2 "redundant" assignments)
+    bottom_right = r
+    bottom_left = l
+
+    # Joining top and bottom segments to form outer hull
+    top_left.cwPoint = top_right
+    top_right.ccwPoint = top_left
+    bottom_left.ccwPoint = bottom_right
+    bottom_right.cwPoint = bottom_left
 
     # You can do the following to help in debugging.  This highlights
     # all the points, then shows them, then pauses until you press
@@ -230,8 +273,8 @@ def buildHull(points):
     # highlighting from the points that you previously highlighted.
     for p in points:
         p.highlight = True
-        # Unindent to skip over highlighting individual points by pressing `p`
-        display(wait=True)
+    # Unindent to skip over highlighting individual points by pressing `p`
+    display(wait=True)
 
     # At the very end of buildHull(), you should display the result
     # after every merge, as shown below.  This call to display() does
@@ -240,10 +283,10 @@ def buildHull(points):
 
 
 # Window boundaries based on position of points.
-windowLeft: float
-windowRight: float
-windowTop: float
-windowBottom: float
+windowLeft: float = None
+windowRight: float = None
+windowTop: float = None
+windowBottom: float = None
 
 
 # Set up the display and draw the current image
@@ -292,8 +335,6 @@ def display(wait=False):
         # wait for 'p'
         while lastKey != 80:
             glfw.wait_events()
-            if glfw.window_should_close(window):
-                sys.exit(0)
             display()
 
         sys.stderr.write("\r                     \r")
@@ -406,7 +447,7 @@ def main():
 
     # Testing the base cases for 2/3 points
     # allPoints = [allPoints[0], allPoints[-1]]
-    allPoints = [allPoints[0], allPoints[len(allPoints) // 2], allPoints[-1]]
+    # allPoints = [allPoints[0], allPoints[len(allPoints) // 2], allPoints[-1]]
 
     # Run the code
     buildHull(allPoints)
