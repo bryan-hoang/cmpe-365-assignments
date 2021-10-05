@@ -1,0 +1,48 @@
+CMPE/CISC 365 Assignment 1
+
+Due Friday, October 8 at noon.
+
+In this assignment you'll write code to build the convex hull of a set
+of 2D points.  Undergraduates may work in groups of two.  Graduate
+students must work individually.
+
+1. Get the main.py code running.  READ ALL OF THE CODE AND UNDERSTAND
+   HOW IT WORKS.
+
+2. Modify buildHull() to handle the base cases in which you have two
+   or three points.  In those cases, you should form the hull
+   directly.  To do so, set the 'cwPoint' and 'ccwPoint' fields of
+   each of the two or three points.  These fields should be set to be
+   the points on the hull directly CW and CCW of the point in
+   question.  Do not continue to the next step until you get this
+   working and have tested it visually.
+
+3. Modify buildHull() to handle the recursive case.  This will take
+   time.  At each step of implementation, you should check your
+   algorithm with the visual animation.  Read the code comments to see
+   how that animation works with the display() function.
+
+4. Modify buildHull() to discard the points that are no longer on the
+   hull after each merge.  These points are "discarded" by setting
+   their 'cwPoint' and 'ccwPoint' to None.  Do not remove these points
+   from the 'allPoints' list.  Be careful NOT TO DISCARD points that
+   are on the hull after the merge.
+
+To submit:
+
+   Submit two files with EXACTLY THESE NAMES.
+
+     README.txt - containing the name, student number, and netID of each
+                  person working on the assignment.  Include here any
+                  comments you have for the TA. 
+
+     main.py    - the modified code, well commented.
+
+   YOU WILL LOSE MARKS IF YOU DO NOT SUBMIT TWO FILES WITH EXACTLY THE
+   NAMES ABOVE.
+
+   IN A GROUP OF TWO, ONLY ONE PERSON MAY SUBMIT THE ASSIGNMENT.  IF
+   YOUR GROUP SUBMITS TWO ASSIGNMENTS, YOU WILL LOSE MARKS.
+
+For marking, we will read your code for correctness, clarity, and
+quality, and we will run your code.
