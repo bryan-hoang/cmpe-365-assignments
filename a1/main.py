@@ -9,10 +9,32 @@
 #   PyOpenGL, GLFW
 
 
-import sys, math
+import math
+import sys
+from typing import List, Optional
 
 try:  # PyOpenGL
-    from OpenGL.GL import *
+    from OpenGL.GL import (
+        GL_COLOR_BUFFER_BIT,
+        GL_FILL,
+        GL_FRONT_AND_BACK,
+        GL_LINE_LOOP,
+        GL_LINES,
+        GL_MODELVIEW,
+        GL_POINT_FADE_THRESHOLD_SIZE,
+        GL_POLYGON,
+        GL_PROJECTION,
+        glBegin,
+        glClear,
+        glClearColor,
+        glColor3f,
+        glEnd,
+        glLoadIdentity,
+        glMatrixMode,
+        glOrtho,
+        glPolygonMode,
+        glVertex2f,
+    )
 except:
     print("Error: PyOpenGL has not been installed.")
     sys.exit(0)
@@ -24,31 +46,6 @@ except:
     sys.exit(0)
 
 
-# Globals
-
-window = None
-
-windowWidth = 1000  # window dimensions
-windowHeight = 1000
-
-minX = None  # range of points
-maxX = None
-minY = None
-maxY = None
-
-r = 0.01  # point radius as fraction of window size
-
-numAngles = 32
-thetas = [
-    i / float(numAngles) * 2 * 3.14159 for i in range(numAngles)
-]  # used for circle drawing
-
-allPoints = []  # list of points
-
-lastKey = None  # last key pressed
-
-discardPoints = False
-
 # Point
 #
 # A Point stores its coordinates and pointers to the two points beside
@@ -57,16 +54,14 @@ discardPoints = False
 #
 # For debugging, you can set the 'highlight' flag of a point.  This
 # will cause the point to be highlighted when it's drawn.
-
-
 class Point(object):
-    def __init__(self, coords):
+    def __init__(self, coords: List[bytes]):
 
         self.x = float(coords[0])  # coordinates
         self.y = float(coords[1])
 
-        self.ccwPoint = None  # point CCW of this on hull
-        self.cwPoint = None  # point CW of this on hull
+        self.ccwPoint: Optional[Point] = None  # point CCW of this on hull
+        self.cwPoint: Optional[Point] = None  # point CW of this on hull
 
         self.highlight = False  # to cause drawing to highlight this point
 
@@ -93,19 +88,43 @@ class Point(object):
         glEnd()
 
         # Draw edges to next CCW and CW points.
-
-        if self.ccwPoint:
+        if self.ccwPoint is not None:
             glColor3f(0, 0, 1)
             drawArrow(self.x, self.y, self.ccwPoint.x, self.ccwPoint.y)
 
-        if self.ccwPoint:
+        if self.cwPoint is not None:
             glColor3f(1, 0, 0)
             drawArrow(self.x, self.y, self.cwPoint.x, self.cwPoint.y)
 
 
+# Globals
+
+window = None
+
+windowWidth = 1000  # window dimensions
+windowHeight = 1000
+
+# Range of points
+minX: float
+maxX: float
+minY: float
+maxY: float
+
+r = 0.01  # point radius as fraction of window size
+
+numAngles = 32
+thetas = [
+    i / float(numAngles) * 2 * 3.14159 for i in range(numAngles)
+]  # used for circle drawing
+
+allPoints: List[Point] = []  # list of points
+
+lastKey = None  # last key pressed
+
+discardPoints = GL_POINT_FADE_THRESHOLD_SIZE
+
+
 # Draw an arrow between two points, offset a bit to the right
-
-
 def drawArrow(x0, y0, x1, y1):
 
     d = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
@@ -207,10 +226,11 @@ def buildHull(points):
     display()
 
 
-windowLeft = None
-windowRight = None
-windowTop = None
-windowBottom = None
+# Window boundaries based on position of points.
+windowLeft: float
+windowRight: float
+windowTop: float
+windowBottom: float
 
 
 # Set up the display and draw the current image
@@ -259,12 +279,9 @@ def display(wait=False):
     glfw.swap_buffers(window)
 
     # Maybe wait until the user presses 'p' to proceed
-
     if wait:
-
         sys.stderr.write('Press "p" to proceed ')
         sys.stderr.flush()
-
         lastKey = None
         while lastKey != 80:  # wait for 'p'
             glfw.wait_events()
@@ -335,7 +352,6 @@ def mouseButtonCallback(window, btn, action, keyModifiers):
 
 
 def main():
-
     global window, allPoints, minX, maxX, minY, maxY, r, discardPoints
 
     # Check command-line args
