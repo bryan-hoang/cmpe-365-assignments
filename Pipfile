@@ -11,6 +11,8 @@ glfw = "*"
 black = "*"
 pylint = "*"
 mypy = "*"
+bandit = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.10"
