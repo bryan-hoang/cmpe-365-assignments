@@ -376,7 +376,10 @@ def display(wait=False):
 def keyCallback(window, key, scancode, action, mods):
     global lastKey
 
-    if action == glfw.PRESS:
+    # Detecting key RELEASE instead of PRESS because for some reason on my
+    # machine, there was a ghost press of the escape key when I started the
+    # program that made it instantly close without any interaction.
+    if action == glfw.RELEASE:
         # quit upon ESC
         if key == glfw.KEY_ESCAPE:
             # The command below wasn't closing the program properly. Professor
