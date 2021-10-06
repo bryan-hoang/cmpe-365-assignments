@@ -7,4 +7,5 @@ CMPE 365 Assignment 1 Submission
 
 Comments for TA:
 
-- N/A
+- The code has been formatted with `black`
+- The code has mainly been tested on python 3.10
