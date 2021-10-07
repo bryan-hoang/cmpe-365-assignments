@@ -62,8 +62,8 @@ class Point:
         self.x = float(coords[0])  # coordinates
         self.y = float(coords[1])
 
-        self.ccwPoint: Point = None  # point CCW of this on hull
-        self.cwPoint: Point = None  # point CW of this on hull
+        self.ccwPoint: Point | None = None  # point CCW of this on hull
+        self.cwPoint: Point | None = None  # point CW of this on hull
 
         self.highlight = False  # to cause drawing to highlight this point
 
@@ -170,8 +170,10 @@ RIGHT_TURN = 2
 COLLINEAR = 3
 
 
-def turn(a: Point, b: Point, c: Point):
+def turn(a: Point | None, b: Point | None, c: Point | None):
     """Determine if traversing the points a, b, c in order results in a left or right turn."""
+    assert not (a is None or b is None or c is None)
+
     # Calculate the determinant of the vectors formed by ac and bc.
     det = (a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y)
 
@@ -241,8 +243,8 @@ def buildHull(points: list[Point]):
     old_points = set()
 
     # Walk up
-    left_point = left_points[-1]
-    right_point = right_points[0]
+    left_point: Point = left_points[-1]
+    right_point: Point = right_points[0]
 
     # If the left or right point can step up
     while (
@@ -252,9 +254,11 @@ def buildHull(points: list[Point]):
         # Step up
         if turn(left_point.ccwPoint, left_point, right_point) == LEFT_TURN:
             old_points.add(left_point)
+            assert left_point.ccwPoint is not None
             left_point = left_point.ccwPoint
         else:
             old_points.add(right_point)
+            assert right_point.cwPoint is not None
             right_point = right_point.cwPoint
 
     # Save references to points for top segment, to prevent modifying original
@@ -274,9 +278,11 @@ def buildHull(points: list[Point]):
         # Step up
         if turn(left_point.cwPoint, left_point, right_point) == RIGHT_TURN:
             old_points.add(left_point)
+            assert left_point.cwPoint is not None
             left_point = left_point.cwPoint
         else:
             old_points.add(right_point)
+            assert right_point.ccwPoint is not None
             right_point = right_point.ccwPoint
 
     # Saving reference to point points for consistency/readability (can be
@@ -327,10 +333,10 @@ def buildHull(points: list[Point]):
 
 
 # Window boundaries based on position of points.
-window_left: float = None
-window_right: float = None
-window_top: float = None
-window_bottom: float = None
+window_left: float | None = None
+window_right: float | None = None
+window_top: float | None = None
+window_bottom: float | None = None
 
 
 def display(wait=False):
@@ -418,6 +424,12 @@ def windowReshapeCallback(_window, newWidth, newHeight):
 def mouseButtonCallback(window, _btn, action, _keyModifiers):
     """Handle mouse click/release."""
     if action == glfw.PRESS:
+        assert not (
+            window_left is None
+            or window_right is None
+            or window_top is None
+            or window_bottom is None
+        )
 
         # Find point under mouse
         x, y = glfw.get_cursor_pos(window)  # mouse position
