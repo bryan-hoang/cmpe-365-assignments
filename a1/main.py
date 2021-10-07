@@ -37,13 +37,13 @@ try:  # PyOpenGL
         glPolygonMode,
         glVertex2f,
     )
-except Exception:
+except ModuleNotFoundError as error:
     print("Error: PyOpenGL has not been installed.")
     sys.exit(0)
 
 try:  # GLFW
     import glfw
-except Exception:
+except ModuleNotFoundError:
     print("Error: GLFW has not been installed.")
     sys.exit(0)
 
@@ -62,8 +62,8 @@ class Point:
         self.x = float(coords[0])  # coordinates
         self.y = float(coords[1])
 
-        self.ccwPoint: Point | None = None  # point CCW of this on hull
-        self.cwPoint: Point | None = None  # point CW of this on hull
+        self.ccw_point: Point | None = None  # point CCW of this on hull
+        self.cw_point: Point | None = None  # point CW of this on hull
 
         self.highlight = False  # to cause drawing to highlight this point
 
@@ -71,7 +71,7 @@ class Point:
         """Represent the Point using its coordinates."""
         return f"pt({self.x},{self.y})"
 
-    def drawPoint(self):
+    def draw_point(self):
         """Draw the Point."""
         # Highlight with yellow fill
         if self.highlight:
@@ -93,18 +93,18 @@ class Point:
         glEnd()
 
         # Draw edges to next CCW and CW points.
-        if self.ccwPoint is not None:
+        if self.ccw_point is not None:
             glColor3f(0, 0, 1)
-            drawArrow(self.x, self.y, self.ccwPoint.x, self.ccwPoint.y)
+            draw_arrow(self.x, self.y, self.ccw_point.x, self.ccw_point.y)
 
-        if self.cwPoint is not None:
+        if self.cw_point is not None:
             glColor3f(1, 0, 0)
-            drawArrow(self.x, self.y, self.cwPoint.x, self.cwPoint.y)
+            draw_arrow(self.x, self.y, self.cw_point.x, self.cw_point.y)
 
 
 # Globals
 
-window = None
+display_window = None
 
 window_width = 1000  # window dimensions
 window_height = 1000
@@ -129,37 +129,37 @@ last_key = None  # last key pressed
 discard_points = GL_POINT_FADE_THRESHOLD_SIZE
 
 
-def drawArrow(x0: float, y0: float, x1: float, y1: float):
+def draw_arrow(x_0: float, y_0: float, x_1: float, y_1: float):
     """Draw an arrow between two points, offset a bit to the right."""
-    d = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
+    distance = math.sqrt((x_1 - x_0) * (x_1 - x_0) + (y_1 - y_0) * (y_1 - y_0))
 
-    vx = (x1 - x0) / d  # unit direction (x0,y0) -> (x1,y1)
-    vy = (y1 - y0) / d
+    v_x = (x_1 - x_0) / distance  # unit direction (x0,y0) -> (x1,y1)
+    v_y = (y_1 - y_0) / distance
 
-    vpx = -vy  # unit direction perpendicular to (vx,vy)
-    vpy = vx
+    vpx = -v_y  # unit direction perpendicular to (vx,vy)
+    vpy = v_x
 
-    xa = x0 + 1.5 * r * vx - 0.4 * r * vpx  # arrow tail
-    ya = y0 + 1.5 * r * vy - 0.4 * r * vpy
+    x_a = x_0 + 1.5 * r * v_x - 0.4 * r * vpx  # arrow tail
+    y_a = y_0 + 1.5 * r * v_y - 0.4 * r * vpy
 
-    xb = x1 - 1.5 * r * vx - 0.4 * r * vpx  # arrow head
-    yb = y1 - 1.5 * r * vy - 0.4 * r * vpy
+    x_b = x_1 - 1.5 * r * v_x - 0.4 * r * vpx  # arrow head
+    y_b = y_1 - 1.5 * r * v_y - 0.4 * r * vpy
 
-    xc = xb - 2 * r * vx + 0.5 * r * vpx  # arrow outside left
-    yc = yb - 2 * r * vy + 0.5 * r * vpy
+    x_c = x_b - 2 * r * v_x + 0.5 * r * vpx  # arrow outside left
+    y_c = y_b - 2 * r * v_y + 0.5 * r * vpy
 
-    xd = xb - 2 * r * vx - 0.5 * r * vpx  # arrow outside right
-    yd = yb - 2 * r * vy - 0.5 * r * vpy
+    x_d = x_b - 2 * r * v_x - 0.5 * r * vpx  # arrow outside right
+    y_d = y_b - 2 * r * v_y - 0.5 * r * vpy
 
     glBegin(GL_LINES)
-    glVertex2f(xa, ya)
-    glVertex2f(xb, yb)
+    glVertex2f(x_a, y_a)
+    glVertex2f(x_b, y_b)
     glEnd()
 
     glBegin(GL_POLYGON)
-    glVertex2f(xb, yb)
-    glVertex2f(xc, yc)
-    glVertex2f(xd, yd)
+    glVertex2f(x_b, y_b)
+    glVertex2f(x_c, y_c)
+    glVertex2f(x_d, y_d)
     glEnd()
 
 
@@ -185,7 +185,7 @@ def turn(a: Point | None, b: Point | None, c: Point | None):
 
 
 # Use the method described in class
-def buildHull(points: list[Point]):
+def build_hull(points: list[Point]):
     """Build a convex hull from a set of points."""
     # Handle base cases of two or three points
     #
@@ -193,29 +193,29 @@ def buildHull(points: list[Point]):
 
     if len(points) == 2:
         # Set CW and CCW attributes to each other in the simplest case
-        points[0].cwPoint = points[1]
-        points[0].ccwPoint = points[1]
-        points[1].cwPoint = points[0]
-        points[1].ccwPoint = points[0]
+        points[0].cw_point = points[1]
+        points[0].ccw_point = points[1]
+        points[1].cw_point = points[0]
+        points[1].ccw_point = points[0]
         display(wait=True)
         return
     if len(points) == 3:
         # Check if points form a left turn
         if turn(points[0], points[1], points[2]) == LEFT_TURN:
-            points[0].ccwPoint = points[1]
-            points[0].cwPoint = points[2]
-            points[1].ccwPoint = points[2]
-            points[1].cwPoint = points[0]
-            points[2].ccwPoint = points[0]
-            points[2].cwPoint = points[1]
+            points[0].ccw_point = points[1]
+            points[0].cw_point = points[2]
+            points[1].ccw_point = points[2]
+            points[1].cw_point = points[0]
+            points[2].ccw_point = points[0]
+            points[2].cw_point = points[1]
         # Else they must form a right turn (ignore colinear case)
         else:
-            points[0].cwPoint = points[1]
-            points[0].ccwPoint = points[2]
-            points[1].cwPoint = points[2]
-            points[1].ccwPoint = points[0]
-            points[2].cwPoint = points[0]
-            points[2].ccwPoint = points[1]
+            points[0].cw_point = points[1]
+            points[0].ccw_point = points[2]
+            points[1].cw_point = points[2]
+            points[1].ccw_point = points[0]
+            points[2].cw_point = points[0]
+            points[2].ccw_point = points[1]
         display(wait=True)
         return
 
@@ -234,13 +234,13 @@ def buildHull(points: list[Point]):
     right_points = points[len(points) // 2 : len(points)]
 
     # Recursively build the left and right hulls.
-    buildHull(left_points)
-    buildHull(right_points)
+    build_hull(left_points)
+    build_hull(right_points)
 
     # Merge the individual hulls.
 
     # Keep track of points stepped over during walk up/down.
-    old_points = set()
+    old_points: set[Point] = set()
 
     # Walk up
     left_point: Point = left_points[-1]
@@ -248,18 +248,18 @@ def buildHull(points: list[Point]):
 
     # If the left or right point can step up
     while (
-        turn(left_point.ccwPoint, left_point, right_point) == LEFT_TURN
-        or turn(left_point, right_point, right_point.cwPoint) == LEFT_TURN
+        turn(left_point.ccw_point, left_point, right_point) == LEFT_TURN
+        or turn(left_point, right_point, right_point.cw_point) == LEFT_TURN
     ):
         # Step up
-        if turn(left_point.ccwPoint, left_point, right_point) == LEFT_TURN:
+        if turn(left_point.ccw_point, left_point, right_point) == LEFT_TURN:
             old_points.add(left_point)
-            assert left_point.ccwPoint is not None
-            left_point = left_point.ccwPoint
+            assert left_point.ccw_point is not None
+            left_point = left_point.ccw_point
         else:
             old_points.add(right_point)
-            assert right_point.cwPoint is not None
-            right_point = right_point.cwPoint
+            assert right_point.cw_point is not None
+            right_point = right_point.cw_point
 
     # Save references to points for top segment, to prevent modifying original
     # `l` and `r` points before walk down algorithm occurs.
@@ -272,18 +272,18 @@ def buildHull(points: list[Point]):
 
     # If the left or right point can step down
     while (
-        turn(left_point.cwPoint, left_point, right_point) == RIGHT_TURN
-        or turn(left_point, right_point, right_point.ccwPoint) == RIGHT_TURN
+        turn(left_point.cw_point, left_point, right_point) == RIGHT_TURN
+        or turn(left_point, right_point, right_point.ccw_point) == RIGHT_TURN
     ):
         # Step up
-        if turn(left_point.cwPoint, left_point, right_point) == RIGHT_TURN:
+        if turn(left_point.cw_point, left_point, right_point) == RIGHT_TURN:
             old_points.add(left_point)
-            assert left_point.cwPoint is not None
-            left_point = left_point.cwPoint
+            assert left_point.cw_point is not None
+            left_point = left_point.cw_point
         else:
             old_points.add(right_point)
-            assert right_point.ccwPoint is not None
-            right_point = right_point.ccwPoint
+            assert right_point.ccw_point is not None
+            right_point = right_point.ccw_point
 
     # Saving reference to point points for consistency/readability (can be
     # refactored to remove 2 "redundant" assignments).
@@ -291,10 +291,10 @@ def buildHull(points: list[Point]):
     bottom_left = left_point
 
     # Joining top and bottom segments to form the outer hull.
-    top_left.cwPoint = top_right
-    top_right.ccwPoint = top_left
-    bottom_left.ccwPoint = bottom_right
-    bottom_right.cwPoint = bottom_left
+    top_left.cw_point = top_right
+    top_right.ccw_point = top_left
+    bottom_left.ccw_point = bottom_right
+    bottom_right.cw_point = bottom_left
 
     # Remove points that on the hull to not accdentally remove cw/ccw
     # references.
@@ -302,8 +302,8 @@ def buildHull(points: list[Point]):
 
     # Remove CW and CCW references for all points in old_points
     for point in old_points:
-        point.cwPoint = None
-        point.ccwPoint = None
+        point.cw_point = None
+        point.ccw_point = None
 
     # You can do the following to help in debugging.  This highlights
     # all the points, then shows them, then pauses until you press
@@ -321,8 +321,8 @@ def buildHull(points: list[Point]):
     #
     # Always after you have inspected things, you should remove the
     # highlighting from the points that you previously highlighted.
-    for p in points:
-        p.highlight = True
+    for point in points:
+        point.highlight = True
     # Unindent to skip over highlighting individual points by pressing `p`
     # display(wait=True)
 
@@ -371,11 +371,11 @@ def display(wait=False):
     glOrtho(window_left, window_right, window_bottom, window_top, 0, 1)
 
     # Draw points and hull
-    for p in all_points:
-        p.drawPoint()
+    for point in all_points:
+        point.draw_point()
 
     # Show window
-    glfw.swap_buffers(window)
+    glfw.swap_buffers(display_window)
 
     # Maybe wait until the user presses 'p' to proceed
     if wait:
@@ -386,7 +386,7 @@ def display(wait=False):
         # wait for 'p'
         while last_key != 80:
             glfw.wait_events()
-            if glfw.window_should_close(window):
+            if glfw.window_should_close(display_window):
                 sys.exit(0)
             display()
 
@@ -394,7 +394,7 @@ def display(wait=False):
         sys.stderr.flush()
 
 
-def keyCallback(window, key, _scancode, action, _mods):
+def key_callback(window, key, _scancode, action, _mods):
     """Handle keyboard input."""
     global last_key
 
@@ -413,15 +413,15 @@ def keyCallback(window, key, _scancode, action, _mods):
             last_key = key
 
 
-def windowReshapeCallback(_window, newWidth, newHeight):
+def window_reshape_callback(_window, new_width, new_height):
     """Handle window reshape."""
     global window_width, window_height
 
-    window_width = newWidth
-    window_height = newHeight
+    window_width = new_width
+    window_height = new_height
 
 
-def mouseButtonCallback(window, _btn, action, _keyModifiers):
+def mouse_button_callback(window, _btn, action, _key_modifiers):
     """Handle mouse click/release."""
     if action == glfw.PRESS:
         assert not (
@@ -434,29 +434,32 @@ def mouseButtonCallback(window, _btn, action, _keyModifiers):
         # Find point under mouse
         x, y = glfw.get_cursor_pos(window)  # mouse position
 
-        wx = (x - 0) / float(window_width) * (
+        w_x = (x - 0) / float(window_width) * (
             window_right - window_left
         ) + window_left
-        wy = (window_height - y) / float(window_height) * (
+        w_y = (window_height - y) / float(window_height) * (
             window_top - window_bottom
         ) + window_bottom
-        minDist = window_right - window_left
-        minPoint = None
-        for p in all_points:
-            dist = math.sqrt((p.x - wx) * (p.x - wx) + (p.y - wy) * (p.y - wy))
-            if dist < r and dist < minDist:
-                minDist = dist
-                minPoint = p
+        min_dist = window_right - window_left
+        min_point = None
+        for point in all_points:
+            dist = math.sqrt(
+                (point.x - w_x) * (point.x - w_x)
+                + (point.y - w_y) * (point.y - w_y)
+            )
+            if dist < r and dist < min_dist:
+                min_dist = dist
+                min_point = point
 
         # print point and toggle its highlight
-        if minPoint:
-            minPoint.highlight = not minPoint.highlight
-            print(minPoint)
+        if min_point:
+            min_point.highlight = not min_point.highlight
+            print(min_point)
 
 
 def main():
     """Initialize GLFW and run the main event loop."""
-    global window, all_points, min_x, max_x, min_y, max_y, r, discard_points
+    global display_window, all_points, min_x, max_x, min_y, max_y, r, discard_points
 
     # Check command-line args
     if len(sys.argv) < 2:
@@ -475,24 +478,24 @@ def main():
         print("Error: GLFW failed to initialize")
         sys.exit(1)
 
-    window = glfw.create_window(
+    display_window = glfw.create_window(
         window_width, window_height, "Assignment 1", None, None
     )
 
-    if not window:
+    if not display_window:
         glfw.terminate()
         print("Error: GLFW failed to create a window")
         sys.exit(1)
 
-    glfw.make_context_current(window)
+    glfw.make_context_current(display_window)
     glfw.swap_interval(1)
-    glfw.set_key_callback(window, keyCallback)
-    glfw.set_window_size_callback(window, windowReshapeCallback)
-    glfw.set_mouse_button_callback(window, mouseButtonCallback)
+    glfw.set_key_callback(display_window, key_callback)
+    glfw.set_window_size_callback(display_window, window_reshape_callback)
+    glfw.set_mouse_button_callback(display_window, mouse_button_callback)
 
     # Read the points
-    with open(args[0], "rb") as f:
-        all_points = [Point(line.split(b" ")) for line in f.readlines()]
+    with open(args[0], "rb") as file:
+        all_points = [Point(line.split(b" ")) for line in file.readlines()]
 
     # Get bounding box of points
     min_x = min(p.x for p in all_points)
@@ -514,13 +517,13 @@ def main():
     # allPoints = [allPoints[0], allPoints[len(allPoints) // 2], allPoints[-1]]
 
     # Run the code
-    buildHull(all_points)
+    build_hull(all_points)
 
     # Wait to exit
-    while not glfw.window_should_close(window):
+    while not glfw.window_should_close(display_window):
         glfw.wait_events()
 
-    glfw.destroy_window(window)
+    glfw.destroy_window(display_window)
     glfw.terminate()
 
 
