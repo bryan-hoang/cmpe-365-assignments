@@ -37,7 +37,7 @@ try:  # PyOpenGL
         glPolygonMode,
         glVertex2f,
     )
-except ModuleNotFoundError as error:
+except ModuleNotFoundError:
     print("Error: PyOpenGL has not been installed.")
     sys.exit(0)
 
@@ -53,9 +53,9 @@ class Point:
 
     The CW and CCW pointers are None if the point is not on any hull.
 
-    For debugging, you can set the 'highlight' flag of a point.  This
-    will cause the point to be highlighted when it's drawn.
-    """
+    For debugging, you can set the 'highlight' flag of a point.
+    This will cause the point to be highlighted when it's drawn.
+    """  # noqa: E501
 
     def __init__(self, coords: list[bytes]):
         """Initialize Point with coordinates."""
@@ -171,7 +171,7 @@ COLLINEAR = 3
 
 
 def turn(a: Point | None, b: Point | None, c: Point | None):
-    """Determine if traversing the points a, b, c in order results in a left or right turn."""
+    """Get the direction of a turn if traversing three points in order."""
     assert not (a is None or b is None or c is None)
 
     # Calculate the determinant of the vectors formed by ac and bc.
@@ -459,7 +459,7 @@ def mouse_button_callback(window, _btn, action, _key_modifiers):
 
 def main():
     """Initialize GLFW and run the main event loop."""
-    global display_window, all_points, min_x, max_x, min_y, max_y, r, discard_points
+    global display_window, all_points, min_x, max_x, min_y, max_y, r, discard_points  # noqa: E501
 
     # Check command-line args
     if len(sys.argv) < 2:
