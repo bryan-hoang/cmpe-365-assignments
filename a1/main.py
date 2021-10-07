@@ -1,12 +1,15 @@
-# Convex hull
-#
-# Usage: python main.py [-d] file_of_points
-#
-# You can press ESC in the window to exit.
-#
-# You'll need Python 3 and must install these packages:
-#
-#   PyOpenGL, GLFW
+"""
+Convex hull.
+
+Usage: python main.py [-d] file_of_points
+
+You can press ESC in the window to exit.
+
+You'll need Python 3 and must install these packages:
+
+  PyOpenGL, GLFW
+"""
+
 
 import math
 import sys
@@ -34,26 +37,28 @@ try:  # PyOpenGL
         glPolygonMode,
         glVertex2f,
     )
-except:
+except Exception:
     print("Error: PyOpenGL has not been installed.")
     sys.exit(0)
 
 try:  # GLFW
     import glfw
-except:
+except Exception:
     print("Error: GLFW has not been installed.")
     sys.exit(0)
 
-# Point
-#
-# A Point stores its coordinates and pointers to the two points beside
-# it (CW and CCW) on its hull.  The CW and CCW pointers are None if
-# the point is not on any hull.
-#
-# For debugging, you can set the 'highlight' flag of a point.  This
-# will cause the point to be highlighted when it's drawn.
-class Point(object):
+
+class Point:
+    """Stores its coordinates and pointers to the two points beside it (CW and CCW) on its hull.
+
+    The CW and CCW pointers are None if the point is not on any hull.
+
+    For debugging, you can set the 'highlight' flag of a point.  This
+    will cause the point to be highlighted when it's drawn.
+    """
+
     def __init__(self, coords: list[bytes]):
+        """Initialize Point with coordinates."""
         self.x = float(coords[0])  # coordinates
         self.y = float(coords[1])
 
@@ -63,22 +68,28 @@ class Point(object):
         self.highlight = False  # to cause drawing to highlight this point
 
     def __repr__(self):
-        return "pt(%g,%g)" % (self.x, self.y)
+        """Represent the Point using its coordinates."""
+        return f"pt({self.x},{self.y})"
 
     def drawPoint(self):
+        """Draw the Point."""
         # Highlight with yellow fill
         if self.highlight:
             glColor3f(0.9, 0.9, 0.4)
             glBegin(GL_POLYGON)
             for theta in thetas:
-                glVertex2f(self.x + r * math.cos(theta), self.y + r * math.sin(theta))
+                glVertex2f(
+                    self.x + r * math.cos(theta), self.y + r * math.sin(theta)
+                )
             glEnd()
 
-        # Outline the point
+        # Outline the pointF
         glColor3f(0, 0, 0)
         glBegin(GL_LINE_LOOP)
         for theta in thetas:
-            glVertex2f(self.x + r * math.cos(theta), self.y + r * math.sin(theta))
+            glVertex2f(
+                self.x + r * math.cos(theta), self.y + r * math.sin(theta)
+            )
         glEnd()
 
         # Draw edges to next CCW and CW points.
@@ -95,32 +106,31 @@ class Point(object):
 
 window = None
 
-windowWidth = 1000  # window dimensions
-windowHeight = 1000
+window_width = 1000  # window dimensions
+window_height = 1000
 
 # Range of points
-minX: float
-maxX: float
-minY: float
-maxY: float
+min_x: float
+max_x: float
+min_y: float
+max_y: float
 
 r = 0.01  # point radius as fraction of window size
 
-numAngles = 32
+num_angles = 32
 thetas = [
-    i / float(numAngles) * 2 * 3.14159 for i in range(numAngles)
+    i / float(num_angles) * 2 * 3.14159 for i in range(num_angles)
 ]  # used for circle drawing
 
-allPoints: list[Point] = []  # list of points
+all_points: list[Point] = []  # list of points
 
-lastKey = None  # last key pressed
+last_key = None  # last key pressed
 
-discardPoints = GL_POINT_FADE_THRESHOLD_SIZE
+discard_points = GL_POINT_FADE_THRESHOLD_SIZE
 
 
-# Draw an arrow between two points, offset a bit to the right
-def drawArrow(x0, y0, x1, y1):
-
+def drawArrow(x0: float, y0: float, x1: float, y1: float):
+    """Draw an arrow between two points, offset a bit to the right."""
     d = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
 
     vx = (x1 - x0) / d  # unit direction (x0,y0) -> (x1,y1)
@@ -161,20 +171,20 @@ COLLINEAR = 3
 
 
 def turn(a: Point, b: Point, c: Point):
-    # Calculate the determinant of the vectors formed by ab and bc.
+    """Determine if traversing the points a, b, c in order results in a left or right turn."""
+    # Calculate the determinant of the vectors formed by ac and bc.
     det = (a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y)
+
     if det > 0:
         return LEFT_TURN
-    elif det < 0:
+    if det < 0:
         return RIGHT_TURN
-    else:
-        return COLLINEAR
+    return COLLINEAR
 
 
-# Build a convex hull from a set of points
-#
 # Use the method described in class
 def buildHull(points: list[Point]):
+    """Build a convex hull from a set of points."""
     # Handle base cases of two or three points
     #
     # [YOUR CODE HERE]
@@ -187,7 +197,7 @@ def buildHull(points: list[Point]):
         points[1].ccwPoint = points[0]
         display(wait=True)
         return
-    elif len(points) == 3:
+    if len(points) == 3:
         # Check if points form a left turn
         if turn(points[0], points[1], points[2]) == LEFT_TURN:
             points[0].ccwPoint = points[1]
@@ -231,42 +241,48 @@ def buildHull(points: list[Point]):
     old_points = set()
 
     # Walk up
-    l = left_points[-1]
-    r = right_points[0]
+    left_point = left_points[-1]
+    right_point = right_points[0]
 
     # If the left or right point can step up
-    while turn(l.ccwPoint, l, r) == LEFT_TURN or turn(l, r, r.cwPoint) == LEFT_TURN:
+    while (
+        turn(left_point.ccwPoint, left_point, right_point) == LEFT_TURN
+        or turn(left_point, right_point, right_point.cwPoint) == LEFT_TURN
+    ):
         # Step up
-        if turn(l.ccwPoint, l, r) == LEFT_TURN:
-            old_points.add(l)
-            l = l.ccwPoint
+        if turn(left_point.ccwPoint, left_point, right_point) == LEFT_TURN:
+            old_points.add(left_point)
+            left_point = left_point.ccwPoint
         else:
-            old_points.add(r)
-            r = r.cwPoint
+            old_points.add(right_point)
+            right_point = right_point.cwPoint
 
     # Save references to points for top segment, to prevent modifying original
     # `l` and `r` points before walk down algorithm occurs.
-    top_left = l
-    top_right = r
+    top_left = left_point
+    top_right = right_point
 
     # Walk down
-    l = left_points[-1]
-    r = right_points[0]
+    left_point = left_points[-1]
+    right_point = right_points[0]
 
     # If the left or right point can step down
-    while turn(l.cwPoint, l, r) == RIGHT_TURN or turn(l, r, r.ccwPoint) == RIGHT_TURN:
+    while (
+        turn(left_point.cwPoint, left_point, right_point) == RIGHT_TURN
+        or turn(left_point, right_point, right_point.ccwPoint) == RIGHT_TURN
+    ):
         # Step up
-        if turn(l.cwPoint, l, r) == RIGHT_TURN:
-            old_points.add(l)
-            l = l.cwPoint
+        if turn(left_point.cwPoint, left_point, right_point) == RIGHT_TURN:
+            old_points.add(left_point)
+            left_point = left_point.cwPoint
         else:
-            old_points.add(r)
-            r = r.ccwPoint
+            old_points.add(right_point)
+            right_point = right_point.ccwPoint
 
     # Saving reference to point points for consistency/readability (can be
     # refactored to remove 2 "redundant" assignments).
-    bottom_right = r
-    bottom_left = l
+    bottom_right = right_point
+    bottom_left = left_point
 
     # Joining top and bottom segments to form the outer hull.
     top_left.cwPoint = top_right
@@ -311,15 +327,15 @@ def buildHull(points: list[Point]):
 
 
 # Window boundaries based on position of points.
-windowLeft: float = None
-windowRight: float = None
-windowTop: float = None
-windowBottom: float = None
+window_left: float = None
+window_right: float = None
+window_top: float = None
+window_bottom: float = None
 
 
-# Set up the display and draw the current image
 def display(wait=False):
-    global lastKey, windowLeft, windowRight, windowBottom, windowTop
+    """Set up the display and draw the current image."""
+    global last_key, window_left, window_right, window_bottom, window_top
 
     # Handle any events that have occurred
     glfw.poll_events()
@@ -335,21 +351,21 @@ def display(wait=False):
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    if maxX - minX > maxY - minY:  # wider point spread in x direction
-        windowLeft = -0.1 * (maxX - minX) + minX
-        windowRight = 1.1 * (maxX - minX) + minX
-        windowBottom = windowLeft
-        windowTop = windowRight
+    if max_x - min_x > max_y - min_y:  # wider point spread in x direction
+        window_left = -0.1 * (max_x - min_x) + min_x
+        window_right = 1.1 * (max_x - min_x) + min_x
+        window_bottom = window_left
+        window_top = window_right
     else:  # wider point spread in y direction
-        windowTop = -0.1 * (maxY - minY) + minY
-        windowBottom = 1.1 * (maxY - minY) + minY
-        windowLeft = windowBottom
-        windowRight = windowTop
+        window_top = -0.1 * (max_y - min_y) + min_y
+        window_bottom = 1.1 * (max_y - min_y) + min_y
+        window_left = window_bottom
+        window_right = window_top
 
-    glOrtho(windowLeft, windowRight, windowBottom, windowTop, 0, 1)
+    glOrtho(window_left, window_right, window_bottom, window_top, 0, 1)
 
     # Draw points and hull
-    for p in allPoints:
+    for p in all_points:
         p.drawPoint()
 
     # Show window
@@ -359,10 +375,10 @@ def display(wait=False):
     if wait:
         sys.stderr.write('Press "p" to proceed ')
         sys.stderr.flush()
-        lastKey = None
+        last_key = None
 
         # wait for 'p'
-        while lastKey != 80:
+        while last_key != 80:
             glfw.wait_events()
             if glfw.window_should_close(window):
                 sys.exit(0)
@@ -372,9 +388,9 @@ def display(wait=False):
         sys.stderr.flush()
 
 
-# Handle keyboard input
-def keyCallback(window, key, scancode, action, mods):
-    global lastKey
+def keyCallback(window, key, _scancode, action, _mods):
+    """Handle keyboard input."""
+    global last_key
 
     # Detecting key RELEASE instead of PRESS because for some reason on my
     # machine, there was a ghost press of the escape key when I started the
@@ -388,33 +404,33 @@ def keyCallback(window, key, scancode, action, mods):
             # sys.exit(0)
             glfw.set_window_should_close(window, GL_TRUE)
         else:
-            lastKey = key
+            last_key = key
 
 
-# Handle window reshape
-def windowReshapeCallback(window, newWidth, newHeight):
+def windowReshapeCallback(_window, newWidth, newHeight):
+    """Handle window reshape."""
+    global window_width, window_height
 
-    global windowWidth, windowHeight
-
-    windowWidth = newWidth
-    windowHeight = newHeight
+    window_width = newWidth
+    window_height = newHeight
 
 
-# Handle mouse click/release
-def mouseButtonCallback(window, btn, action, keyModifiers):
+def mouseButtonCallback(window, _btn, action, _keyModifiers):
+    """Handle mouse click/release."""
     if action == glfw.PRESS:
 
         # Find point under mouse
         x, y = glfw.get_cursor_pos(window)  # mouse position
 
-        wx = (x - 0) / float(windowWidth) * (windowRight - windowLeft) + windowLeft
-        wy = (windowHeight - y) / float(windowHeight) * (
-            windowTop - windowBottom
-        ) + windowBottom
-
-        minDist = windowRight - windowLeft
+        wx = (x - 0) / float(window_width) * (
+            window_right - window_left
+        ) + window_left
+        wy = (window_height - y) / float(window_height) * (
+            window_top - window_bottom
+        ) + window_bottom
+        minDist = window_right - window_left
         minPoint = None
-        for p in allPoints:
+        for p in all_points:
             dist = math.sqrt((p.x - wx) * (p.x - wx) + (p.y - wy) * (p.y - wy))
             if dist < r and dist < minDist:
                 minDist = dist
@@ -426,20 +442,20 @@ def mouseButtonCallback(window, btn, action, keyModifiers):
             print(minPoint)
 
 
-# Initialize GLFW and run the main event loop
 def main():
-    global window, allPoints, minX, maxX, minY, maxY, r, discardPoints
+    """Initialize GLFW and run the main event loop."""
+    global window, all_points, min_x, max_x, min_y, max_y, r, discard_points
 
     # Check command-line args
     if len(sys.argv) < 2:
-        print("Usage: %s filename" % sys.argv[0])
+        print(f"Usage: {sys.argv[0]} filename")
         sys.exit(1)
 
     args = sys.argv[1:]
     while len(args) > 1:
         print(args)
         if args[0] == "-d":
-            discardPoints = not discardPoints
+            discard_points = not discard_points
         args = args[1:]
 
     # Set up window
@@ -447,7 +463,9 @@ def main():
         print("Error: GLFW failed to initialize")
         sys.exit(1)
 
-    window = glfw.create_window(windowWidth, windowHeight, "Assignment 1", None, None)
+    window = glfw.create_window(
+        window_width, window_height, "Assignment 1", None, None
+    )
 
     if not window:
         glfw.terminate()
@@ -462,29 +480,29 @@ def main():
 
     # Read the points
     with open(args[0], "rb") as f:
-        allPoints = [Point(line.split(b" ")) for line in f.readlines()]
+        all_points = [Point(line.split(b" ")) for line in f.readlines()]
 
     # Get bounding box of points
-    minX = min(p.x for p in allPoints)
-    maxX = max(p.x for p in allPoints)
-    minY = min(p.y for p in allPoints)
-    maxY = max(p.y for p in allPoints)
+    min_x = min(p.x for p in all_points)
+    max_x = max(p.x for p in all_points)
+    min_y = min(p.y for p in all_points)
+    max_y = max(p.y for p in all_points)
 
     # Adjust point radius in proportion to bounding box
-    if maxX - minX > maxY - minY:
-        r *= maxX - minX
+    if max_x - min_x > max_y - min_y:
+        r *= max_x - min_x
     else:
-        r *= maxY - minY
+        r *= max_y - min_y
 
     # Sort by increasing x.  For equal x, sort by increasing y.
-    allPoints.sort(key=lambda p: (p.x, p.y))
+    all_points.sort(key=lambda p: (p.x, p.y))
 
     # Testing the base cases for 2/3 points
     # allPoints = [allPoints[0], allPoints[-1]]
     # allPoints = [allPoints[0], allPoints[len(allPoints) // 2], allPoints[-1]]
 
     # Run the code
-    buildHull(allPoints)
+    buildHull(all_points)
 
     # Wait to exit
     while not glfw.window_should_close(window):

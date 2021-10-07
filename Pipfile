@@ -13,6 +13,7 @@ pylint = "*"
 mypy = "*"
 bandit = "*"
 flake8 = "*"
+prospector = "*"
 
 [requires]
 python_version = "3.10"
