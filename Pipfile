@@ -1,19 +1,18 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
 
 [packages]
-pyopengl = "*"
 glfw = "*"
+pyopengl = "*"
 
 [dev-packages]
-black = "*"
-pylint = "*"
-mypy = "*"
 bandit = "*"
+black = "*"
 flake8 = "*"
-prospector = "*"
+mypy = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.10"
