@@ -1,12 +1,14 @@
-# Triangle strips
-#
-# Usage: python main.py file_of_triangles
-#
-# You can press ESC in the window to exit.
-#
-# You'll need Python 3 and must install these packages:
-#
-#   PyOpenGL, GLFW
+"""
+Triangle strips.
+
+Usage: python main.py file_of_triangles
+
+You can press ESC in the window to exit.
+
+You'll need Python 3 and must install these packages:
+
+  PyOpenGL, GLFW
+"""
 
 import math
 import sys
@@ -57,28 +59,26 @@ maxY = None
 
 r = 0.008  # point radius as fraction of window size
 
-allVerts = []  # all triangle vertices
+allVerts: list[list[float]] = []  # all triangle vertices
 
 lastKey = None  # last key pressed
 
 showForwardLinks = True
 
 
-# Triangle
-#
-# A Triangle stores its three vertices and pointers to any adjacent triangles.
-#
-# For debugging, you can set the 'highlight1' and 'highlight2' flags
-# of a triangle.  This will cause the triangle to be highlighted when
-# it's drawn.
-
-
 class Triangle(object):
+    """
+    A Triangle stores its three vertices and pointers to any adjacent triangles.
+
+    For debugging, you can set the 'highlight1' and 'highlight2' flags
+    of a triangle.  This will cause the triangle to be highlighted when
+    it's drawn.
+    """
 
     nextID = 0
 
     def __init__(self, verts):
-
+        """Initialize a triangle with the given vertices."""
         self.verts = (
             verts  # 3 vertices.  Each is an index into the 'allVerts' global.
         )
@@ -102,17 +102,13 @@ class Triangle(object):
         self.id = Triangle.nextID
         Triangle.nextID += 1
 
-    # String representation of this triangle
-
     def __repr__(self):
+        """Represent this triangle as a string."""
         return "tri-%d" % self.id
 
-    # Draw this triangle
-
     def draw(self):
-
+        """Draw this triangle."""
         # Highlight with yellow fill
-
         if self.highlight1 or self.highlight2:
 
             if self.highlight1:
@@ -133,10 +129,8 @@ class Triangle(object):
             glVertex2f(allVerts[i][0], allVerts[i][1])
         glEnd()
 
-    # Draw edges to next and previous triangle on the strip
-
     def drawPointers(self):
-
+        """Draw edges to next and previous triangle on the strip."""
         if showForwardLinks and self.nextTri:
             glColor3f(0, 0, 1)
             drawArrow(
@@ -169,10 +163,8 @@ class Triangle(object):
                 )
             glEnd()
 
-    # Determine whether this triangle contains a point
-
     def containsPoint(self, pt):
-
+        """Determine whether this triangle contains a point."""
         return (
             turn(allVerts[self.verts[0]], allVerts[self.verts[1]], pt)
             == LEFT_TURN
@@ -183,11 +175,8 @@ class Triangle(object):
         )
 
 
-# Draw an arrow between two points.
-
-
 def drawArrow(x0, y0, x1, y1):
-
+    """Draw an arrow between two points."""
     d = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
 
     vx = (x1 - x0) / d  # unit direction (x0,y0) -> (x1,y1)
@@ -220,15 +209,13 @@ def drawArrow(x0, y0, x1, y1):
     glEnd()
 
 
-# Determine whether three points make a left or right turn
-
 LEFT_TURN = 1
 RIGHT_TURN = 2
 COLLINEAR = 3
 
 
 def turn(a, b, c):
-
+    """Determine whether three points make a left or right turn."""
     det = (a[0] - c[0]) * (b[1] - c[1]) - (b[0] - c[0]) * (a[1] - c[1])
 
     if det > 0:
@@ -243,18 +230,19 @@ def turn(a, b, c):
 # ================================================================
 # ================================================================
 
-# Build a set of triangle strips that cover all of the given
-# triangles.  The goal is to make the strips as long as possible
-# (i.e. to have the fewest strip that cover all triangles).
-#
-# Follow the instructions in A2.txt.
-#
-# This function does not return anything.  The strips are formed by
-# modifying the 'nextTri' and 'prevTri' pointers in each triangle.
-
 
 def buildTristrips(triangles):
+    """
+    Build a set of triangle strips that cover all of the given triangles.
 
+    The goal is to make the strips as long as possible
+    (i.e. to have the fewest strip that cover all triangles).
+
+    Follow the instructions in A2.txt.
+
+    This function does not return anything.  The strips are formed by
+    modifying the 'nextTri' and 'prevTri' pointers in each triangle.
+    """
     count = 0
 
     # [YOUR CODE HERE]
@@ -269,8 +257,6 @@ def buildTristrips(triangles):
 # ================================================================
 
 
-# Set up the display and draw the current image
-
 windowLeft = None
 windowRight = None
 windowTop = None
@@ -278,7 +264,7 @@ windowBottom = None
 
 
 def display(wait=False):
-
+    """Set up the display and draw the current image."""
     global lastKey, windowLeft, windowRight, windowBottom, windowTop
 
     # Handle any events that have occurred
@@ -340,10 +326,8 @@ def display(wait=False):
         sys.stderr.flush()
 
 
-# Handle keyboard input
-
-
-def keyCallback(window, key, scancode, action, mods):
+def keyCallback(_window, key, _scancode, action, _mods):
+    """Handle keyboard input."""
     global lastKey, showForwardLinks
 
     if action == glfw.RELEASE:
@@ -355,22 +339,16 @@ def keyCallback(window, key, scancode, action, mods):
             lastKey = key
 
 
-# Handle window reshape
-
-
-def windowReshapeCallback(window, newWidth, newHeight):
-
+def windowReshapeCallback(_window, newWidth, newHeight):
+    """Handle window reshape."""
     global windowWidth, windowHeight
 
     windowWidth = newWidth
     windowHeight = newHeight
 
 
-# Handle mouse click/release
-
-
-def mouseButtonCallback(window, btn, action, keyModifiers):
-
+def mouseButtonCallback(window, _btn, action, _keyModifiers):
+    """Handle mouse click/release."""
     if action == glfw.PRESS:
 
         # Find point under mouse
@@ -403,11 +381,8 @@ def mouseButtonCallback(window, btn, action, keyModifiers):
                 t.highlight2 = not t.highlight2
 
 
-# Read triangles from a file
-
-
 def readTriangles(f):
-
+    """Read triangles from a file."""
     global allVerts
 
     errorsFound = False
@@ -458,7 +433,6 @@ def readTriangles(f):
     tris = []
 
     for tvs in triVerts:
-        theseVerts = tvs
         if (
             turn(allVerts[tvs[0]], allVerts[tvs[1]], allVerts[tvs[2]])
             != COLLINEAR
@@ -521,11 +495,8 @@ def readTriangles(f):
         return tris
 
 
-# Initialize GLFW and run the main event loop
-
-
 def main():
-
+    """Initialize GLFW and run the main event loop."""
     global window, allTriangles, minX, maxX, minY, maxY, r
 
     # Check command-line args
