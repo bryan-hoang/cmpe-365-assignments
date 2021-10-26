@@ -225,13 +225,12 @@ def build_hull(points: list[Point]):
     # point that was removed from the convex hull in a merge, set that
     # point's CCW and CW pointers to None.  You'll see that the arrows
     # from interior points disappear after you do this.
-    #
-    # [YOUR CODE HERE]
 
     # Split points by x value (this is trivial because the points are already
     # sorted).
-    left_points = points[0 : len(points) // 2]
-    right_points = points[len(points) // 2 : len(points)]
+    split = len(points) // 2
+    left_points = points[:split]
+    right_points = points[split:]
 
     # Recursively build the left and right hulls.
     build_hull(left_points)
