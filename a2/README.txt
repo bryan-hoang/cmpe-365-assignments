@@ -8,4 +8,8 @@ CMPE 365 Assignment 2 Submission
 Comments for TA:
 
 - The code has been formatted with `black`
+- The code has been linted with:
+  - pydocstyle
+  - flake8
+  - pylint
 - The code has mainly been tested on python 3.10
