@@ -67,8 +67,7 @@ showForwardLinks = True
 
 
 class Triangle(object):
-    """
-    A Triangle stores its three vertices and pointers to any adjacent triangles.
+    """A Triangle stores its three vertices and pointers to any adjacent triangles.
 
     For debugging, you can set the 'highlight1' and 'highlight2' flags
     of a triangle.  This will cause the triangle to be highlighted when
@@ -77,15 +76,15 @@ class Triangle(object):
 
     nextID = 0
 
-    def __init__(self, verts):
+    def __init__(self, verts: list[int]):
         """Initialize a triangle with the given vertices."""
         self.verts = (
             verts  # 3 vertices.  Each is an index into the 'allVerts' global.
         )
-        self.adjTris = []  # adjacent triangles
+        self.adjTris: list[Triangle] = []  # adjacent triangles
 
-        self.nextTri = None  # next triangle on strip
-        self.prevTri = None  # previous triangle on strip
+        self.nextTri: Triangle | None = None  # next triangle on strip
+        self.prevTri: Triangle | None = None  # previous triangle on strip
 
         self.highlight1 = (
             False  # to cause drawing to highlight this triangle in colour 1
@@ -231,25 +230,71 @@ def turn(a, b, c):
 # ================================================================
 
 
-def buildTristrips(triangles):
+def buildTristrips(triangles: list[Triangle]):
     """
     Build a set of triangle strips that cover all of the given triangles.
 
     The goal is to make the strips as long as possible
-    (i.e. to have the fewest strip that cover all triangles).
+    (i.e., to have the fewest strip that cover all triangles).
 
     Follow the instructions in A2.txt.
 
     This function does not return anything.  The strips are formed by
     modifying the 'nextTri' and 'prevTri' pointers in each triangle.
     """
-    count = 0
+    # Common logic for selecting a triangle with a minimum number of adjacent
+    # non-strip triangles.
+    def get_triangle_with_min_adj_non_strip_triangles(
+        triangles: set[Triangle],
+    ):
+        def count_adj_non_strip_triangles(triangle: Triangle):
+            return sum(
+                # If `nextTri` isn't set, `prevTri` isn't set either.
+                int(not adjacent_triangle.nextTri)
+                for adjacent_triangle in triangle.adjTris
+            )
 
-    # [YOUR CODE HERE]
-    #
-    # Increment 'count' every time you *start* a new triStrip.
+        return min(triangles, key=count_adj_non_strip_triangles)
 
-    print("Generated %d tristrips" % count)
+    # Converting to a set to get access to set removal and intersection. Also,
+    # the ordering of a list isn't used.
+    non_strip_triangles: set[Triangle] = {*triangles}
+    triangle_strip_count: int = 0
+
+    # Begin building the triangle strips.
+    while non_strip_triangles:
+        # Start a new triangle strip
+        triangle_strip_count += 1
+        current_strip_triangle: Triangle = (
+            get_triangle_with_min_adj_non_strip_triangles(non_strip_triangles)
+        )
+        non_strip_triangles -= {current_strip_triangle}
+
+        # Get eligible triangles to add to the strip.
+        adj_non_strip_triangles: set[Triangle] = {
+            *current_strip_triangle.adjTris
+        } & non_strip_triangles
+
+        # Build the triangle strip.
+        while adj_non_strip_triangles:
+            # Add another triangle to the strip.
+            next_strip_triangle: Triangle = (
+                get_triangle_with_min_adj_non_strip_triangles(
+                    adj_non_strip_triangles
+                )
+            )
+            non_strip_triangles -= {next_strip_triangle}
+
+            current_strip_triangle.nextTri = next_strip_triangle
+            next_strip_triangle.prevTri = current_strip_triangle
+
+            # Continue building the triangle strip.
+            current_strip_triangle = next_strip_triangle
+            adj_non_strip_triangles = {
+                *current_strip_triangle.adjTris
+            } & non_strip_triangles
+
+    print(f"Generated {triangle_strip_count} tristrips")
 
 
 # ================================================================
@@ -398,9 +443,12 @@ def readTriangles(f):
 
     # Check that the vertices are valid
 
-    for l, v in enumerate(allVerts):
+    for line_number, v in enumerate(allVerts):
         if len(v) != 2:
-            print("Line %d: vertex does not have two coordinates." % (l + 2))
+            print(
+                "Line %d: vertex does not have two coordinates."
+                % (line_number + 2)
+            )
             errorsFound = True
 
     # Read the triangles
@@ -412,11 +460,11 @@ def readTriangles(f):
 
     # Check that the triangle vertices are valid
 
-    for l, tvs in enumerate(triVerts):
+    for line_number, tvs in enumerate(triVerts):
         if len(tvs) != 3:
             print(
                 "Line %d: triangle does not have three vertices."
-                % (l + 2 + numVerts)
+                % (line_number + 2 + numVerts)
             )
             errorsFound = True
         else:
@@ -424,13 +472,13 @@ def readTriangles(f):
                 if v < 0 or v >= numVerts:
                     print(
                         "Line %d: Vertex index is not in range [0,%d]."
-                        % (l + 2 + numVerts, numVerts - 1)
+                        % (line_number + 2 + numVerts, numVerts - 1)
                     )
                     errorsFound = True
 
     # Build triangles
 
-    tris = []
+    tris: list[Triangle] = []
 
     for tvs in triVerts:
         if (
