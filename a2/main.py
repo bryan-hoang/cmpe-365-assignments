@@ -49,8 +49,8 @@ except ModuleNotFoundError:
 
 window = None
 
-windowWidth = 1000  # window dimensions
-windowHeight = 1000
+window_width = 1000  # window dimensions
+window_height = 1000
 
 minX = None  # range of vertices
 maxX = None
@@ -66,7 +66,7 @@ lastKey = None  # last key pressed
 showForwardLinks = True
 
 
-class Triangle(object):
+class Triangle:
     """A Triangle stores its three vertices and pointers to any adjacent triangles.
 
     For debugging, you can set the 'highlight1' and 'highlight2' flags
@@ -81,10 +81,10 @@ class Triangle(object):
         self.verts = (
             verts  # 3 vertices.  Each is an index into the 'allVerts' global.
         )
-        self.adjTris: list[Triangle] = []  # adjacent triangles
+        self.adj_tris: list[Triangle] = []  # adjacent triangles
 
-        self.nextTri: Triangle | None = None  # next triangle on strip
-        self.prevTri: Triangle | None = None  # previous triangle on strip
+        self.next_tri: Triangle | None = None  # next triangle on strip
+        self.prev_tri: Triangle | None = None  # previous triangle on strip
 
         self.highlight1 = (
             False  # to cause drawing to highlight this triangle in colour 1
@@ -94,8 +94,8 @@ class Triangle(object):
         )
 
         self.centroid = (
-            sum([allVerts[i][0] for i in self.verts]) / len(self.verts),
-            sum([allVerts[i][1] for i in self.verts]) / len(self.verts),
+            sum(allVerts[i][0] for i in self.verts) / len(self.verts),
+            sum(allVerts[i][1] for i in self.verts) / len(self.verts),
         )
 
         self.id = Triangle.nextID
@@ -103,7 +103,7 @@ class Triangle(object):
 
     def __repr__(self):
         """Represent this triangle as a string."""
-        return "tri-%d" % self.id
+        return f"tri-{self.id:d}"
 
     def draw(self):
         """Draw this triangle."""
@@ -128,27 +128,27 @@ class Triangle(object):
             glVertex2f(allVerts[i][0], allVerts[i][1])
         glEnd()
 
-    def drawPointers(self):
+    def draw_pointers(self):
         """Draw edges to next and previous triangle on the strip."""
-        if showForwardLinks and self.nextTri:
+        if showForwardLinks and self.next_tri:
             glColor3f(0, 0, 1)
-            drawArrow(
+            draw_arrow(
                 self.centroid[0],
                 self.centroid[1],
-                self.nextTri.centroid[0],
-                self.nextTri.centroid[1],
+                self.next_tri.centroid[0],
+                self.next_tri.centroid[1],
             )
 
-        if not showForwardLinks and self.prevTri:
+        if not showForwardLinks and self.prev_tri:
             glColor3f(1, 0, 0)
-            drawArrow(
+            draw_arrow(
                 self.centroid[0],
                 self.centroid[1],
-                self.prevTri.centroid[0],
-                self.prevTri.centroid[1],
+                self.prev_tri.centroid[0],
+                self.prev_tri.centroid[1],
             )
 
-        if not self.nextTri and not self.prevTri:  # no links.  Draw a dot.
+        if not self.next_tri and not self.prev_tri:  # no links.  Draw a dot.
             if showForwardLinks:
                 glColor3f(0, 0, 1)
             else:
@@ -162,49 +162,52 @@ class Triangle(object):
                 )
             glEnd()
 
-    def containsPoint(self, pt):
+    def contains_point(self, point):
         """Determine whether this triangle contains a point."""
         return (
-            turn(allVerts[self.verts[0]], allVerts[self.verts[1]], pt)
+            turn(allVerts[self.verts[0]], allVerts[self.verts[1]], point)
             == LEFT_TURN
-            and turn(allVerts[self.verts[1]], allVerts[self.verts[2]], pt)
+            and turn(allVerts[self.verts[1]], allVerts[self.verts[2]], point)
             == LEFT_TURN
-            and turn(allVerts[self.verts[2]], allVerts[self.verts[0]], pt)
+            and turn(allVerts[self.verts[2]], allVerts[self.verts[0]], point)
             == LEFT_TURN
         )
 
 
-def drawArrow(x0, y0, x1, y1):
+all_triangles: list[Triangle] = []
+
+
+def draw_arrow(x_0, y_0, x_1, y_1):
     """Draw an arrow between two points."""
-    d = math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
+    distance = math.sqrt((x_1 - x_0) * (x_1 - x_0) + (y_1 - y_0) * (y_1 - y_0))
 
-    vx = (x1 - x0) / d  # unit direction (x0,y0) -> (x1,y1)
-    vy = (y1 - y0) / d
+    v_x = (x_1 - x_0) / distance  # unit direction (x0,y0) -> (x1,y1)
+    v_y = (y_1 - y_0) / distance
 
-    vpx = -vy  # unit direction perpendicular to (vx,vy)
-    vpy = vx
+    vpx = -v_y  # unit direction perpendicular to (vx,vy)
+    vpy = v_x
 
-    xa = x0 + 0.15 * r * vx  # arrow tail
-    ya = y0 + 0.15 * r * vy
+    x_a = x_0 + 0.15 * r * v_x  # arrow tail
+    y_a = y_0 + 0.15 * r * v_y
 
-    xb = x1 - 0.15 * r * vx  # arrow head
-    yb = y1 - 0.15 * r * vy
+    x_b = x_1 - 0.15 * r * v_x  # arrow head
+    y_b = y_1 - 0.15 * r * v_y
 
-    xc = xb - 2 * r * vx + 0.5 * r * vpx  # arrow outside left
-    yc = yb - 2 * r * vy + 0.5 * r * vpy
+    x_c = x_b - 2 * r * v_x + 0.5 * r * vpx  # arrow outside left
+    y_c = y_b - 2 * r * v_y + 0.5 * r * vpy
 
-    xd = xb - 2 * r * vx - 0.5 * r * vpx  # arrow outside right
-    yd = yb - 2 * r * vy - 0.5 * r * vpy
+    x_d = x_b - 2 * r * v_x - 0.5 * r * vpx  # arrow outside right
+    y_d = y_b - 2 * r * v_y - 0.5 * r * vpy
 
     glBegin(GL_LINES)
-    glVertex2f(xa, ya)
-    glVertex2f(0.5 * (xc + xd), 0.5 * (yc + yd))
+    glVertex2f(x_a, y_a)
+    glVertex2f(0.5 * (x_c + x_d), 0.5 * (y_c + y_d))
     glEnd()
 
     glBegin(GL_LINE_LOOP)
-    glVertex2f(xb, yb)
-    glVertex2f(xc, yc)
-    glVertex2f(xd, yd)
+    glVertex2f(x_b, y_b)
+    glVertex2f(x_c, y_c)
+    glVertex2f(x_d, y_d)
     glEnd()
 
 
@@ -230,7 +233,7 @@ def turn(a, b, c):
 # ================================================================
 
 
-def buildTristrips(triangles: list[Triangle]):
+def build_tristrips(triangles: list[Triangle]):
     """
     Build a set of triangle strips that cover all of the given triangles.
 
@@ -250,8 +253,8 @@ def buildTristrips(triangles: list[Triangle]):
         def count_adj_non_strip_triangles(triangle: Triangle):
             return sum(
                 # If `nextTri` isn't set, `prevTri` isn't set either.
-                int(not adjacent_triangle.nextTri)
-                for adjacent_triangle in triangle.adjTris
+                int(not adjacent_triangle.next_tri)
+                for adjacent_triangle in triangle.adj_tris
             )
 
         return min(triangles, key=count_adj_non_strip_triangles)
@@ -272,7 +275,7 @@ def buildTristrips(triangles: list[Triangle]):
 
         # Get eligible triangles to add to the strip.
         adj_non_strip_triangles: set[Triangle] = {
-            *current_strip_triangle.adjTris
+            *current_strip_triangle.adj_tris
         } & non_strip_triangles
 
         # Build the triangle strip.
@@ -285,13 +288,13 @@ def buildTristrips(triangles: list[Triangle]):
             )
             non_strip_triangles -= {next_strip_triangle}
 
-            current_strip_triangle.nextTri = next_strip_triangle
-            next_strip_triangle.prevTri = current_strip_triangle
+            current_strip_triangle.next_tri = next_strip_triangle
+            next_strip_triangle.prev_tri = current_strip_triangle
 
             # Continue building the triangle strip.
             current_strip_triangle = next_strip_triangle
             adj_non_strip_triangles = {
-                *current_strip_triangle.adjTris
+                *current_strip_triangle.adj_tris
             } & non_strip_triangles
 
     print(f"Generated {triangle_strip_count} tristrips")
@@ -343,14 +346,14 @@ def display(wait=False):
 
     # Draw triangles
 
-    for tri in allTriangles:
+    for tri in all_triangles:
         tri.draw()
 
     # Draw pointers.  Do this *after* the triangles (above) so that the
     # triangle drawing doesn't overlay the pointers.
 
-    for tri in allTriangles:
-        tri.drawPointers()
+    for tri in all_triangles:
+        tri.draw_pointers()
 
     # Show window
 
@@ -371,7 +374,7 @@ def display(wait=False):
         sys.stderr.flush()
 
 
-def keyCallback(_window, key, _scancode, action, _mods):
+def key_callback(_window, key, _scancode, action, _mods):
     """Handle keyboard input."""
     global lastKey, showForwardLinks
 
@@ -384,15 +387,15 @@ def keyCallback(_window, key, _scancode, action, _mods):
             lastKey = key
 
 
-def windowReshapeCallback(_window, newWidth, newHeight):
+def window_reshape_callback(_window, new_width, new_height):
     """Handle window reshape."""
-    global windowWidth, windowHeight
+    global window_width, window_height
 
-    windowWidth = newWidth
-    windowHeight = newHeight
+    window_width = new_width
+    window_height = new_height
 
 
-def mouseButtonCallback(window, _btn, action, _keyModifiers):
+def mouse_button_callback(window, _btn, action, _key_modifiers):
     """Handle mouse click/release."""
     if action == glfw.PRESS:
 
@@ -400,87 +403,86 @@ def mouseButtonCallback(window, _btn, action, _keyModifiers):
 
         x, y = glfw.get_cursor_pos(window)  # mouse position
 
-        wx = (x - 0) / float(windowWidth) * (
+        w_x = (x - 0) / float(window_width) * (
             windowRight - windowLeft
         ) + windowLeft
-        wy = (windowHeight - y) / float(windowHeight) * (
+        w_y = (window_height - y) / float(window_height) * (
             windowTop - windowBottom
         ) + windowBottom
 
-        selectedTri = None
-        for tri in allTriangles:
-            if tri.containsPoint([wx, wy]):
-                selectedTri = tri
+        selected_tri: Triangle = None
+        for tri in all_triangles:
+            if tri.contains_point([w_x, w_y]):
+                selected_tri = tri
                 break
 
         # Print triangle, toggle its highlight1, and toggle the highlight2s of
         # its adjacent triangles.
 
-        if selectedTri:
-            selectedTri.highlight1 = not selectedTri.highlight1
+        if selected_tri:
+            selected_tri.highlight1 = not selected_tri.highlight1
             print(
-                "%s with adjacent %s"
-                % (selectedTri, repr(selectedTri.adjTris))
+                f"{selected_tri} with adjacent {repr(selected_tri.adj_tris)}"
             )
-            for t in selectedTri.adjTris:
-                t.highlight2 = not t.highlight2
+            for adjacent_triangle in selected_tri.adj_tris:
+                adjacent_triangle.highlight2 = not adjacent_triangle.highlight2
 
 
-def readTriangles(f):
+def read_triangles(file):
     """Read triangles from a file."""
     global allVerts
 
-    errorsFound = False
+    errors_found = False
 
-    lines = f.readlines()
+    lines = file.readlines()
 
     # Read the vertices
 
-    numVerts = int(lines[0])
+    num_verts = int(lines[0])
     allVerts = [
-        [float(c) for c in line.split()] for line in lines[1 : numVerts + 1]
+        [float(c) for c in line.split()] for line in lines[1 : num_verts + 1]
     ]
 
     # Check that the vertices are valid
 
-    for line_number, v in enumerate(allVerts):
-        if len(v) != 2:
+    for line_number, vertex in enumerate(allVerts):
+        if len(vertex) != 2:
             print(
-                "Line %d: vertex does not have two coordinates."
-                % (line_number + 2)
+                f"Line {line_number + 2}: "
+                f"vertex does not have two coordinates."
             )
-            errorsFound = True
+            errors_found = True
 
     # Read the triangles
 
-    numTris = int(lines[numVerts + 1])
-    triVerts = [
-        [int(v) for v in line.split()] for line in lines[numVerts + 2 :]
+    num_tris = int(lines[num_verts + 1])
+    tri_verts = [
+        [int(v) for v in line.split()] for line in lines[num_verts + 2 :]
     ]
 
     # Check that the triangle vertices are valid
 
-    for line_number, tvs in enumerate(triVerts):
+    for line_number, tvs in enumerate(tri_verts):
         if len(tvs) != 3:
             print(
-                "Line %d: triangle does not have three vertices."
-                % (line_number + 2 + numVerts)
+                f"Line {line_number + 2 + num_verts}:"
+                f" triangle does not have three vertices."
             )
-            errorsFound = True
+            errors_found = True
         else:
-            for v in tvs:
-                if v < 0 or v >= numVerts:
+            for vertex in tvs:
+                if vertex < 0 or vertex >= num_verts:
                     print(
-                        "Line %d: Vertex index is not in range [0,%d]."
-                        % (line_number + 2 + numVerts, numVerts - 1)
+                        f"Line {line_number + 2 + num_verts}: "
+                        f"Vertex index is not in range [0,{num_verts - 1}]."
                     )
-                    errorsFound = True
+                    errors_found = True
 
     # Build triangles
 
     tris: list[Triangle] = []
 
-    for tvs in triVerts:
+    for tvs in tri_verts:
         if (
             turn(allVerts[tvs[0]], allVerts[tvs[1]], allVerts[tvs[2]])
             != COLLINEAR
@@ -495,20 +497,20 @@ def readTriangles(f):
     if False:
 
         for tri in tris:  # brute force
-            adjTris = []
+            adj_tris = []
             for i in range(3):
-                v0 = tri.verts[i % 3]
-                v1 = tri.verts[(i + 1) % 3]
+                v_0 = tri.verts[i % 3]
+                v_1 = tri.verts[(i + 1) % 3]
                 for tri2 in tris:
                     for j in range(3):
                         if (
-                            v1 == tri2.verts[j % 3]
-                            and v0 == tri2.verts[(j + 1) % 3]
+                            v_1 == tri2.verts[j % 3]
+                            and v_0 == tri2.verts[(j + 1) % 3]
                         ):
-                            adjTris.append(tri2)
-                    if len(adjTris) == 3:
+                            adj_tris.append(tri2)
+                    if len(adj_tris) == 3:
                         break
-            tri.adjTris = adjTris
+            tri.adj_tris = adj_tris
 
     else:  # hashing
 
@@ -516,28 +518,28 @@ def readTriangles(f):
 
         for tri in tris:
             for i in range(3):
-                v0 = tri.verts[i % 3]
-                v1 = tri.verts[(i + 1) % 3]
-                key = "%f-%f" % (v0, v1)
+                v_0 = tri.verts[i % 3]
+                v_1 = tri.verts[(i + 1) % 3]
+                key = f"{v_0:f}-{v_1:f}"
                 edges[key] = tri
 
         for tri in tris:
-            adjTris = []
+            adj_tris = []
             for i in range(3):
-                v1 = tri.verts[
+                v_1 = tri.verts[
                     i % 3
                 ]  # find a reversed edge of an adjacent triangle
-                v0 = tri.verts[(i + 1) % 3]
-                key = "%f-%f" % (v0, v1)
+                v_0 = tri.verts[(i + 1) % 3]
+                key = f"{v_0:f}-{v_1:f}"
                 if key in edges:
-                    adjTris.append(edges[key])
-                if len(adjTris) == 3:
+                    adj_tris.append(edges[key])
+                if len(adj_tris) == 3:
                     break
-            tri.adjTris = adjTris
+            tri.adj_tris = adj_tris
 
-    print("Read %d points and %d triangles" % (numVerts, numTris))
+    print(f"Read {num_verts} points and {num_tris} triangles")
 
-    if errorsFound:
+    if errors_found:
         return []
     else:
         return tris
@@ -545,12 +547,12 @@ def readTriangles(f):
 
 def main():
     """Initialize GLFW and run the main event loop."""
-    global window, allTriangles, minX, maxX, minY, maxY, r
+    global window, all_triangles, minX, maxX, minY, maxY, r
 
     # Check command-line args
 
     if len(sys.argv) < 2:
-        print("Usage: %s filename" % sys.argv[0])
+        print(f"Usage: {sys.argv[0]} filename")
         sys.exit(1)
 
     args = sys.argv[1:]
@@ -566,7 +568,7 @@ def main():
         sys.exit(1)
 
     window = glfw.create_window(
-        windowWidth, windowHeight, "Assignment 2", None, None
+        window_width, window_height, "Assignment 2", None, None
     )
 
     if not window:
@@ -576,16 +578,16 @@ def main():
 
     glfw.make_context_current(window)
     glfw.swap_interval(1)
-    glfw.set_key_callback(window, keyCallback)
-    glfw.set_window_size_callback(window, windowReshapeCallback)
-    glfw.set_mouse_button_callback(window, mouseButtonCallback)
+    glfw.set_key_callback(window, key_callback)
+    glfw.set_window_size_callback(window, window_reshape_callback)
+    glfw.set_mouse_button_callback(window, mouse_button_callback)
 
     # Read the triangles.  This also fills in the global 'allVerts'.
 
-    with open(args[0], "rb") as f:
-        allTriangles = readTriangles(f)
+    with open(args[0], "rb") as file:
+        all_triangles = read_triangles(file)
 
-    if allTriangles == []:
+    if all_triangles == []:
         return
 
     # Get bounding box of points
@@ -604,7 +606,7 @@ def main():
 
     # Run the code
 
-    buildTristrips(allTriangles)
+    build_tristrips(all_triangles)
 
     # Show result and wait to exit
 
