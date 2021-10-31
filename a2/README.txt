@@ -7,9 +7,13 @@ CMPE 365 Assignment 2 Submission
 
 Comments for TA:
 
-- The code has been formatted with `black`
-- The code has been linted with:
-  - pydocstyle
-  - flake8
-  - pylint
-- The code has mainly been tested on python 3.10
+- The code has been:
+  - mainly tested on python 3.10
+  - formatted with `black`
+  - linted with:
+    - `pydocstyle`
+    - `flake8`
+  - modified with some additional type hints
+  - modified to detect 'p' key *releases* rather than *presses* due to a bug on
+    WSL 2 where "ghost presses" cause the program to exit prematurely. The
+    behaviour is practically identical to the unmodified variant.
