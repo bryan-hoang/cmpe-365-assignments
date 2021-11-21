@@ -1,0 +1,57 @@
+CMPE/CISC 365 Assignment 3
+
+Due Friday, December 3 at noon.
+
+In this assignment you'll write a dynamic programming algorithm to
+compute a minimum-area triangulation between two contours in 3D.
+
+There are two data files: testSlices.dat and femurSlices.dat.  You can
+see them by running the code as
+
+    python3 main.py femurSlices.dat
+
+Press '?' in the window to see what keystrokes and mouse movements you
+can use.
+
+Undergraduates may work in groups of two.  Graduate students must work
+individually.
+
+1. Get the main.py code running.  Read all of the code and understand
+   how it works.
+
+All of your coding should be done in buildTriangles().  You can add
+your own functions that are called by your code inside
+buildTriangles().  Do not modify any other of the provided code.
+
+2. Implement the algorithm according to the comments in buildTriangles().
+
+   Do your testing with testSlices.dat.  Once that's working, try your
+   code on femurSlices.dat.  You can do a single slice of the femur
+   data by pressing 's', then '>' or '<' to move the slice up or down,
+   then 'c' to compute the VISIBLE SLICE ONLY.  If all slices are
+   visible, the code will take a longer time to compute all
+   triangulations.
+
+   If you have successfully installed GLUT, you can press 'v' or 'e'
+   or 't' to get the vertex, edge, and triangle identifiers shown in
+   the window.  That can help with your debugging.  But you do not
+   need to do this.
+
+To submit:
+
+   Submit two files with EXACTLY THESE NAMES.
+
+     README.txt - containing the name, student number, and netID of each
+                  person working on the assignment.  Include here any
+                  comments you have for the TA. 
+
+     main.py    - the modified code, well commented.
+
+   YOU WILL LOSE MARKS IF YOU DO NOT SUBMIT TWO FILES WITH EXACTLY THE
+   NAMES ABOVE.
+
+   IN A GROUP OF TWO, ONLY ONE PERSON MAY SUBMIT THE ASSIGNMENT.  IF
+   YOUR GROUP SUBMITS TWO ASSIGNMENTS, YOU WILL LOSE MARKS.
+
+For marking, we will read your code for correctness, clarity, and
+quality, and we will run your code.
