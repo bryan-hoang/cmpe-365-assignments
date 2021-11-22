@@ -1,21 +1,60 @@
-# Dynamic programming for mesh generation
-#
-# Usage: python main.py <file of slices>
-#
-# You'll need Python 3.4+ and must install these packages:
-#
-# PyOpenGL, GLFW
-#
-# YOU MAY NOT INCLUDE ANY OTHER LIBRARIES, ESPECIALLY NumPy.  DOING SO WILL
-# CAUSE YOU TO LOSE MARKS.
+"""
+Dynamic programming for mesh generation
+
+Usage: python main.py <file of slices>
+
+You'll need Python 3.4+ and must install these packages:
+
+PyOpenGL, GLFW
+
+YOU MAY NOT INCLUDE ANY OTHER LIBRARIES, ESPECIALLY NumPy.  DOING SO WILL CAUSE
+YOU TO LOSE MARKS.
+"""
 
 import enum
 import math
 import sys
 
 try:  # PyOpenGL
-    from OpenGL.GL import *
-    from OpenGL.GLU import *
+    from OpenGL.GL import (
+        GL_COLOR_BUFFER_BIT,
+        GL_FILL,
+        GL_FRONT_AND_BACK,
+        GL_LINES,
+        GL_MODELVIEW,
+        GL_PROJECTION,
+        glBegin,
+        glClear,
+        glClearColor,
+        glColor3f,
+        glEnd,
+        glLoadIdentity,
+        glMatrixMode,
+        glPolygonMode,
+    )
+    from OpenGL.raw.GL.VERSION.GL_1_0 import (
+        GL_AMBIENT,
+        GL_DEPTH_BUFFER_BIT,
+        GL_DEPTH_TEST,
+        GL_DIFFUSE,
+        GL_LIGHT0,
+        GL_LIGHT_MODEL_TWO_SIDE,
+        GL_LIGHTING,
+        GL_POSITION,
+        GL_SPECULAR,
+        GL_TRIANGLES,
+        GL_TRUE,
+        glColor3fv,
+        glDisable,
+        glEnable,
+        glLightfv,
+        glLightModeli,
+        glLineWidth,
+        glNormal3fv,
+        glRasterPos3fv,
+        glVertex3fv,
+    )
+    from OpenGL.raw.GLU import gluLookAt, gluPerspective
 except ModuleNotFoundError:
     print("Error: PyOpenGL has not been installed.")
     sys.exit(0)
@@ -33,7 +72,8 @@ haveGlutForFonts = True
 
 if haveGlutForFonts:
     try:  # GLUT
-        from OpenGL.GLUT import *
+        from OpenGL.GLUT import GLUT_BITMAP_8_BY_13, glutInit
+        from OpenGL.raw.GLUT import glutBitmapCharacter
     except ModuleNotFoundError:
         print(
             "Error: Could not import OpenGL.GLUT. "
@@ -58,10 +98,8 @@ labelTris = False
 currentSlice = 0
 
 
-# Vertex
-
-
 class Vertex(object):
+    """Vertex"""
 
     nextID = 0
 
@@ -77,12 +115,8 @@ class Vertex(object):
         return "v%d" % self.id
 
 
-# Slice
-#
-# Contains a 'verts' list, each item of which is a 3D vertex as [x,y,z]
-
-
 class Slice(object):
+    """Contains a 'verts' list, each item of which is a 3D vertex as [x,y,z]"""
 
     nextID = 0
 
@@ -98,10 +132,8 @@ class Slice(object):
     def __repr__(self):
         return "s%d" % self.id
 
-    # Draw this slice
-
     def draw(self):
-
+        """Draw this slice"""
         glColor3f(0, 0, 0)
 
         # Draw points
@@ -123,10 +155,8 @@ class Slice(object):
         glEnd()
 
 
-# Triangle
-
-
 class Triangle(object):
+    """Triangle"""
 
     nextID = 0
 
@@ -167,13 +197,16 @@ class Triangle(object):
 # COULD INSTEAD BE USED.  DOING SO WILL CAUSE YOU TO LOSE MARKS.
 
 
-class Dir(enum.Enum):  # for storing directions of min-area
+class Dir(enum.Enum):
+    """For storing directions of min-area"""
+
     # triangulations in 'minDir' below.
     PREV_ROW = 1
     PREV_COL = 2
 
 
 def buildTriangles(slice0, slice1):
+    """Builds a triangle mesh"""
 
     # Find the closest pair of vertices (one from each slice) to start with.
     #
@@ -206,12 +239,12 @@ def buildTriangles(slice0, slice1):
 
     # [YOUR CODE HERE]
 
-    minArea = [[None]]  # CHANGE THIS
-    minDir = [[None]]  # CHANGE THIS
+    min_area = [[None]]  # CHANGE THIS
+    min_dir = [[None]]  # CHANGE THIS
 
     # Fill in the minArea array
 
-    minArea[0][0] = 0  # Starting edge has zero area
+    min_area[0][0] = 0  # Starting edge has zero area
 
     # Fill in row 0 of minArea and minDir, since it's a special case as there's
     # no row -1.
@@ -304,7 +337,8 @@ rotationAxis = None
 fovyDelta = None
 
 
-def display(wait=False):
+def display(_wait=False):
+    """Displays the window"""
 
     # Handle any events that have occurred
 
@@ -363,8 +397,8 @@ def display(wait=False):
         slicesToDraw = allSlices
 
     if allTriangles == []:
-        for slice in slicesToDraw:
-            slice.draw()  # draws the EDGES of each slice
+        for sliceToDraw in slicesToDraw:
+            sliceToDraw.draw()  # draws the EDGES of each slice
 
     # Set up lighting for triangles
 
@@ -407,19 +441,19 @@ def display(wait=False):
     glLineWidth(3.0)
     glBegin(GL_LINES)
 
-    l = 10  # axis length
+    axis_length = 10  # axis length
 
     glColor3fv([1, 0, 0])  # x
     glVertex3fv([0, 0, 0])
-    glVertex3fv([l, 0, 0])
+    glVertex3fv([axis_length, 0, 0])
 
     glColor3fv([0, 1, 0])  # y
     glVertex3fv([0, 0, 0])
-    glVertex3fv([0, l, 0])
+    glVertex3fv([0, axis_length, 0])
 
     glColor3fv([0, 0, 1])  # z
     glVertex3fv([0, 0, 0])
-    glVertex3fv([0, 0, l])
+    glVertex3fv([0, 0, axis_length])
 
     glEnd()
     glLineWidth(1.0)
@@ -430,14 +464,14 @@ def display(wait=False):
 
     if labelVerts:
         glColor3f(0, 0, 0)
-        for slice in slicesToDraw:
-            for vert in slice.verts:
+        for sliceToDraw in slicesToDraw:
+            for vert in sliceToDraw.verts:
                 drawText(vert.coords, repr(vert))
 
     if labelEdges:
         glColor3f(0, 0, 0)
-        for slice in slicesToDraw:
-            for vert in slice.verts:
+        for sliceToDraw in slicesToDraw:
+            for vert in sliceToDraw.verts:
                 drawText(
                     scalarMult(0.5, add(vert.coords, vert.nextV.coords)),
                     ("%s-%s" % (repr(vert), repr(vert.nextV))),
@@ -463,6 +497,7 @@ def display(wait=False):
 
 
 def drawText(coords, text):
+    """Draws text"""
 
     if haveGlutForFonts:
         glRasterPos3fv(coords)
@@ -470,11 +505,8 @@ def drawText(coords, text):
             glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord(ch))
 
 
-# Handle keyboard input
-
-
-def keyCallback(window, key, scancode, action, mods):
-
+def keyCallback(_window, key, _scancode, action, _mods):
+    """Handles keyboard input"""
     global currentSlice
     global showCurrentSlice
     global allTriangles
@@ -537,26 +569,21 @@ def keyCallback(window, key, scancode, action, mods):
             print("       drag right button up/down - zoom")
 
 
-# Handle window reshape
-
-
-def windowReshapeCallback(window, newWidth, newHeight):
-
+def windowReshapeCallback(_window, newWidth, newHeight):
+    """Handles window reshape"""
     global windowWidth, windowHeight
 
     windowWidth = newWidth
     windowHeight = newHeight
 
 
-# Handle mouse click/release
-
 initX = 0
 initY = 0
 button = None
 
 
-def mouseButtonCallback(window, btn, action, keyModifiers):
-
+def mouseButtonCallback(window, btn, action, _keyModifiers):
+    """Handles mouse click/release"""
     global button
     global initX
     global initY
@@ -589,18 +616,18 @@ def mouseButtonCallback(window, btn, action, keyModifiers):
         fovyDelta = None
 
 
-# Handle mouse motion.  We don't want to transform the image and
-# redraw with each tiny mouse movement.  Instead, just record the fact
-# that the mouse moved.  After events are processed in
-# glfw.wait_events(), check whether the mouse moved and, if so, act on
-# it.
-
-
 mousePositionChanged = False
 
 
-def mouseMovementCallback(window, x, y):
+def mouseMovementCallback(_window, _x, _y):
+    """Handles mouse motion
 
+    We don't want to transform the image and
+    redraw with each tiny mouse movement.  Instead, just record the fact
+    that the mouse moved.  After events are processed in
+    glfw.wait_events(), check whether the mouse moved and, if so, act on
+    it.
+    """
     global mousePositionChanged
 
     if button is not None:  # button is held down
