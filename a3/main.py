@@ -68,7 +68,7 @@ except ModuleNotFoundError:
 # Set to True if you have installed OpenGL GLUT so that text can be drawn on
 # the screen.  It's sometimes very difficult to install GLUT. This is NOT
 # necessary for the assignment, but can help with debugging.
-haveGlutForFonts = True
+haveGlutForFonts = False
 
 if haveGlutForFonts:
     try:  # GLUT
@@ -88,9 +88,6 @@ windowWidth = 800
 windowHeight = 800
 window = None
 
-allSlices = []
-allTriangles = []
-
 showCurrentSlice = False
 labelVerts = False
 labelEdges = False
@@ -103,7 +100,7 @@ class Vertex(object):
 
     nextID = 0
 
-    def __init__(self, coords):
+    def __init__(self, coords: list[float]):
 
         self.coords = coords  # [x,y,z] coordinates
         self.nextV = None  # next vertex in order around the slice
@@ -120,11 +117,11 @@ class Slice(object):
 
     nextID = 0
 
-    def __init__(self, verts):
+    def __init__(self, verts: list[Vertex]):
 
-        self.verts = (
-            verts  # [ v0, v1, v2, v3, ... ] in RH order around +y axis
-        )
+        self.verts: list[
+            Vertex
+        ] = verts  # [ v0, v1, v2, v3, ... ] in RH order around +y axis
 
         self.id = Slice.nextID
         Slice.nextID += 1
@@ -160,7 +157,7 @@ class Triangle(object):
 
     nextID = 0
 
-    def __init__(self, verts):
+    def __init__(self, verts: list | tuple):
         # [ v0, v1, v2 ] is CCW order as seen from outside the object
         self.verts = verts
 
@@ -178,6 +175,10 @@ class Triangle(object):
 
     def __repr__(self):
         return "t%d" % self.id
+
+
+allSlices: list[Slice] = []
+allTriangles: list[Triangle] = []
 
 
 # Build the triangles between two slices
@@ -205,7 +206,7 @@ class Dir(enum.Enum):
     PREV_COL = 2
 
 
-def buildTriangles(slice0, slice1):
+def buildTriangles(slice_0: Slice, slice_1: Slice):
     """Builds a triangle mesh"""
 
     # Find the closest pair of vertices (one from each slice) to start with.
@@ -214,7 +215,19 @@ def buildTriangles(slice0, slice1):
     #
     # [1 mark]
 
-    # [YOUR CODE HERE]
+    # Setting initial values for brute-force search.
+    min_distance = math.inf
+    clostest_pair_of_verts: tuple[Vertex, Vertex] = (
+        slice_0.verts[0],
+        slice_1.verts[0],
+    )
+
+    for v_0 in slice_0.verts:
+        for v_1 in slice_1.verts:
+            vert_distance = length(subtract(v_0.coords, v_1.coords))
+            if vert_distance < min_distance:
+                min_distance = vert_distance
+                clostest_pair_of_verts = (v_0, v_1)
 
     # Make a cyclic permutation of the vertices of each slice,
     # that starts at the closest vertex in each slice found above.
@@ -224,7 +237,25 @@ def buildTriangles(slice0, slice1):
     #
     # [1 mark]
 
-    # [YOUR CODE HERE]
+    slice_0_clostest_vert_index = slice_0.verts.index(
+        clostest_pair_of_verts[0]
+    )
+
+    slice_1_clostest_vert_index = slice_1.verts.index(
+        clostest_pair_of_verts[1]
+    )
+
+    slice_0_cyclic_verts = (
+        *slice_0.verts[slice_0_clostest_vert_index:],
+        # +1 Adding the first vertex to the end of the tuple.
+        *slice_0.verts[: slice_0_clostest_vert_index + 1],
+    )
+
+    slice_1_cyclic_verts = (
+        *slice_1.verts[slice_1_clostest_vert_index:],
+        # +1 Adding the first vertex to the end of the tuple.
+        *slice_1.verts[: slice_1_clostest_vert_index + 1],
+    )
 
     # Set up the 'minArea' array.  The first dimension (rows) of the
     # array corresponds to vertices in slice1.  The second dimension
@@ -237,10 +268,21 @@ def buildTriangles(slice0, slice1):
     #
     # [1 mark]
 
-    # [YOUR CODE HERE]
+    # Initializing both 2-D arrays with -1, since they should be processed
+    # fully eventually.
+    min_area: list[list[float]] = [
+        # Each column.
+        [-1 for _ in range(len(slice_0_cyclic_verts))]
+        # Each row.
+        for _ in range(len(slice_1_cyclic_verts))
+    ]
 
-    min_area = [[None]]  # CHANGE THIS
-    min_dir = [[None]]  # CHANGE THIS
+    min_dir: list[list[Dir]] = [
+        # Each column.
+        [-1 for _ in range(len(slice_0_cyclic_verts))]
+        # Each row.
+        for _ in range(len(slice_1_cyclic_verts))
+    ]
 
     # Fill in the minArea array
 
@@ -251,21 +293,63 @@ def buildTriangles(slice0, slice1):
     #
     # [2 marks]
 
-    # [YOUR CODE HERE]
+    # Along the first row, compute the next (min) area from the previous
+    # column.
+    for col in range(1, len(slice_0_cyclic_verts)):
+        min_dir[0][col] = Dir.PREV_COL
+        min_area[0][col] = min_area[0][col - 1] + triangleArea(
+            slice_1_cyclic_verts[0].coords,
+            slice_0_cyclic_verts[col].coords,
+            slice_0_cyclic_verts[col - 1].coords,
+        )
 
     # Fill in col 0 of minArea and minDir, since it's a special case as there's
     # no col -1.
     #
     # [2 marks]
 
-    # [YOUR CODE HERE]
+    # Along the first row, compute the next (min) area from the previous
+    # row.
+    for row in range(1, len(slice_1_cyclic_verts)):
+        min_dir[row][0] = Dir.PREV_ROW
+        min_area[row][0] = min_area[row - 1][0] + triangleArea(
+            slice_1_cyclic_verts[row].coords,
+            slice_1_cyclic_verts[row - 1].coords,
+            slice_0_cyclic_verts[0].coords,
+        )
 
     # Fill in the remaining entries of minArea and minDir.  This is very
     # similar to the above, but more general.
     #
     # [2 marks]
 
-    # [YOUR CODE HERE]
+    for row in range(1, len(slice_1_cyclic_verts)):
+        for col in range(1, len(slice_0_cyclic_verts)):
+            previous_areas = (
+                # Previous row.
+                min_area[row - 1][col]
+                + triangleArea(
+                    slice_1_cyclic_verts[row].coords,
+                    slice_0_cyclic_verts[col].coords,
+                    slice_1_cyclic_verts[row - 1].coords,
+                ),
+                # Previous column.
+                min_area[row][col - 1]
+                + triangleArea(
+                    slice_1_cyclic_verts[row].coords,
+                    slice_0_cyclic_verts[col].coords,
+                    slice_0_cyclic_verts[col - 1].coords,
+                ),
+            )
+
+            min_area[row][col] = min(previous_areas)
+
+            # If the areas are the same, default to going to the previous
+            # column.
+            if previous_areas[0] < previous_areas[1]:
+                min_dir[row][col] = Dir.PREV_ROW
+            else:
+                min_dir[row][col] = Dir.PREV_COL
 
     # It's useful for debugging at this point to print out the minArea
     # and minDir arrays together.  For example, print a table in which
@@ -295,7 +379,43 @@ def buildTriangles(slice0, slice1):
     #
     # [0 marks]
 
-    # [YOUR CODE HERE, OPTIONALLY]
+    # Print out the minArea and minDir arrays together in a table.
+
+    def print_area_direction_table():
+        """Print out the minArea and minDir arrays together in a tabular format
+
+        For example, print a table in which each element contains the integer
+        minArea and a line (- or |) to indicate from which direction the
+        previous min-area came from.
+        """
+        print()
+
+        # Printing the header row.
+        print(" ", end="")
+        for col in range(len(slice_0_cyclic_verts)):
+            print(f"{col:>7}", end="")
+            print("   ", end="")
+        print()
+
+        # Printing subsequent rows.
+        for row in range(len(slice_1_cyclic_verts)):
+            # Printing the row number.
+            print(row, end="")
+
+            for col in range(len(slice_0_cyclic_verts)):
+                if min_dir[row][col] == Dir.PREV_ROW:
+                    direction_symbol = "|"
+                elif min_dir[row][col] == Dir.PREV_COL:
+                    direction_symbol = "-"
+                else:
+                    direction_symbol = "."
+                print(
+                    f"{min_area[row][col]:>7.1f}", end=f" {direction_symbol} "
+                )
+
+            print()
+
+    # print_area_direction_table()
 
     # Walk backward through the 'minDir' array to build triangulation.
     #
@@ -312,9 +432,33 @@ def buildTriangles(slice0, slice1):
     #
     # [3 marks]
 
-    triangles = []
+    triangles: list[Triangle] = []
 
-    # [YOUR CODE HERE]
+    row = len(slice_1_cyclic_verts) - 1
+    col = len(slice_0_cyclic_verts) - 1
+
+    while row > 0 or col > 0:
+        common_triangle_verts = (
+            slice_1_cyclic_verts[row],
+            slice_0_cyclic_verts[col],
+        )
+
+        if min_dir[row][col] == Dir.PREV_ROW:
+            third_triangle_vertex = slice_1_cyclic_verts[row - 1]
+            row -= 1
+        elif min_dir[row][col] == Dir.PREV_COL:
+            # Previous column.
+            third_triangle_vertex = slice_0_cyclic_verts[col - 1]
+            col -= 1
+        else:
+            raise Exception("Should not get to this point.")
+
+        triangle_verts = (
+            *common_triangle_verts,
+            third_triangle_vertex,
+        )
+
+        triangles.append(Triangle(triangle_verts))
 
     # Return a list of the triangles that you constructed
 
@@ -733,7 +877,7 @@ def add(v0, v1):
     return [v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]]
 
 
-def subtract(v0, v1):
+def subtract(v0: list[float], v1: list[float]):
 
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
 
@@ -757,7 +901,7 @@ def crossProduct(v0, v1):
     ]
 
 
-def length(v):
+def length(v: list[float]):
 
     return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
@@ -772,8 +916,7 @@ def normalize(v):
         return v
 
 
-def triangleArea(v0, v1, v2):
-
+def triangleArea(v0: list[float], v1: list[float], v2: list[float]):
     return 0.5 * length(crossProduct(subtract(v1, v0), subtract(v2, v0)))
 
 
@@ -816,7 +959,7 @@ def readSlices(f):
     lines = f.readlines()
 
     numSlices = int(lines[0])
-    slices = []
+    slices: list[Slice] = []
     lineNum = 1
 
     for i in range(numSlices):

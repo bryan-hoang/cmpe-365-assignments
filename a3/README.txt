@@ -13,7 +13,4 @@ Comments for TA:
   - linted with:
     - `pydocstyle`
     - `flake8`
-  - modified with some additional type hints
-  - modified to detect 'p' key *releases* rather than *presses* due to a bug on
-    WSL 2 where "ghost presses" cause the program to exit prematurely. The
-    behaviour is practically identical to the unmodified variant.
+  - modified with some additional type hints for a better developer experience
