@@ -1,5 +1,5 @@
 """
-Dynamic programming for mesh generation
+Dynamic programming for mesh generation.
 
 Usage: python main.py <file of slices>
 
@@ -68,7 +68,7 @@ except ModuleNotFoundError:
 # Set to True if you have installed OpenGL GLUT so that text can be drawn on
 # the screen.  It's sometimes very difficult to install GLUT. This is NOT
 # necessary for the assignment, but can help with debugging.
-haveGlutForFonts = False
+haveGlutForFonts = True
 
 if haveGlutForFonts:
     try:  # GLUT
@@ -96,12 +96,12 @@ currentSlice = 0
 
 
 class Vertex(object):
-    """Vertex"""
+    """Vertex."""
 
     nextID = 0
 
     def __init__(self, coords: list[float]):
-
+        """Initialize a Vertex with coordinates."""
         self.coords = coords  # [x,y,z] coordinates
         self.nextV = None  # next vertex in order around the slice
 
@@ -109,16 +109,17 @@ class Vertex(object):
         Vertex.nextID += 1
 
     def __repr__(self):
+        """Represent a Vertex with its id."""
         return "v%d" % self.id
 
 
 class Slice(object):
-    """Contains a 'verts' list, each item of which is a 3D vertex as [x,y,z]"""
+    """Contains a verts list, each item of which is a 3D vertex as [x,y,z]."""
 
     nextID = 0
 
     def __init__(self, verts: list[Vertex]):
-
+        """Initialize a slice with vertices."""
         self.verts: list[
             Vertex
         ] = verts  # [ v0, v1, v2, v3, ... ] in RH order around +y axis
@@ -127,10 +128,11 @@ class Slice(object):
         Slice.nextID += 1
 
     def __repr__(self):
+        """Represent a Slice with its id."""
         return "s%d" % self.id
 
     def draw(self):
-        """Draw this slice"""
+        """Draw this slice."""
         glColor3f(0, 0, 0)
 
         # Draw points
@@ -144,20 +146,21 @@ class Slice(object):
         # (1,1,1) at head so that direction can been seen.
 
         glBegin(GL_LINES)
-        for v in self.verts:
+        for vert in self.verts:
             glColor3f(0, 0, 0)
-            glVertex3fv(v.coords)
+            glVertex3fv(vert.coords)
             glColor3f(1, 1, 1)
-            glVertex3fv(v.nextV.coords)
+            glVertex3fv(vert.nextV.coords)
         glEnd()
 
 
 class Triangle(object):
-    """Triangle"""
+    """Triangle."""
 
     nextID = 0
 
-    def __init__(self, verts: list | tuple):
+    def __init__(self, verts: tuple[Vertex, Vertex, Vertex] | list[Vertex]):
+        """Initialize a triangle with 3 vertices."""
         # [ v0, v1, v2 ] is CCW order as seen from outside the object
         self.verts = verts
 
@@ -174,6 +177,7 @@ class Triangle(object):
         Triangle.nextID += 1
 
     def __repr__(self):
+        """Represent a Triangle with its id."""
         return "t%d" % self.id
 
 
@@ -199,7 +203,7 @@ allTriangles: list[Triangle] = []
 
 
 class Dir(enum.Enum):
-    """For storing directions of min-area"""
+    """For storing directions of min-area."""
 
     # triangulations in 'minDir' below.
     PREV_ROW = 1
@@ -207,27 +211,25 @@ class Dir(enum.Enum):
 
 
 def buildTriangles(slice_0: Slice, slice_1: Slice):
-    """Builds a triangle mesh"""
+    """Build a triangle mesh between two slices."""
+    print()
 
     # Find the closest pair of vertices (one from each slice) to start with.
     #
     # This can be done with "brute force" if you wish.
     #
-    # [1 mark]
+    # [1 mark]s
 
-    # Setting initial values for brute-force search.
-    min_distance = math.inf
-    clostest_pair_of_verts: tuple[Vertex, Vertex] = (
-        slice_0.verts[0],
-        slice_1.verts[0],
+    # Storing the indexs to make the cyclic tuples.
+    _, slice_0_clostest_vert_index, slice_1_clostest_vert_index = min(
+        (
+            (distance(v_0.coords, v_1.coords), i, j)
+            for i, v_0 in enumerate(slice_0.verts)
+            for j, v_1 in enumerate(slice_1.verts)
+        ),
+        # Sort only by the distance between two vectors.
+        key=lambda x: x[0],
     )
-
-    for v_0 in slice_0.verts:
-        for v_1 in slice_1.verts:
-            vert_distance = length(subtract(v_0.coords, v_1.coords))
-            if vert_distance < min_distance:
-                min_distance = vert_distance
-                clostest_pair_of_verts = (v_0, v_1)
 
     # Make a cyclic permutation of the vertices of each slice,
     # that starts at the closest vertex in each slice found above.
@@ -237,21 +239,13 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
     #
     # [1 mark]
 
-    slice_0_clostest_vert_index = slice_0.verts.index(
-        clostest_pair_of_verts[0]
-    )
-
-    slice_1_clostest_vert_index = slice_1.verts.index(
-        clostest_pair_of_verts[1]
-    )
-
-    slice_0_cyclic_verts = (
+    columns: tuple[Vertex, ...] = (
         *slice_0.verts[slice_0_clostest_vert_index:],
         # +1 Adding the first vertex to the end of the tuple.
         *slice_0.verts[: slice_0_clostest_vert_index + 1],
     )
 
-    slice_1_cyclic_verts = (
+    rows: tuple[Vertex, ...] = (
         *slice_1.verts[slice_1_clostest_vert_index:],
         # +1 Adding the first vertex to the end of the tuple.
         *slice_1.verts[: slice_1_clostest_vert_index + 1],
@@ -268,20 +262,14 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
     #
     # [1 mark]
 
-    # Initializing both 2-D arrays with -1, since they should be processed
-    # fully eventually.
+    # Initializing both 2-D arrays with -1 or None, since they should be
+    # processed fully eventually.
     min_area: list[list[float]] = [
-        # Each column.
-        [-1 for _ in range(len(slice_0_cyclic_verts))]
-        # Each row.
-        for _ in range(len(slice_1_cyclic_verts))
+        [-1] * len(columns) for _ in range(len(rows))
     ]
 
-    min_dir: list[list[Dir]] = [
-        # Each column.
-        [-1 for _ in range(len(slice_0_cyclic_verts))]
-        # Each row.
-        for _ in range(len(slice_1_cyclic_verts))
+    min_dir: list[list[Dir | None]] = [
+        [None] * len(columns) for _ in range(len(rows))
     ]
 
     # Fill in the minArea array
@@ -295,12 +283,12 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
 
     # Along the first row, compute the next (min) area from the previous
     # column.
-    for col in range(1, len(slice_0_cyclic_verts)):
+    for col in range(1, len(columns)):
         min_dir[0][col] = Dir.PREV_COL
         min_area[0][col] = min_area[0][col - 1] + triangleArea(
-            slice_1_cyclic_verts[0].coords,
-            slice_0_cyclic_verts[col].coords,
-            slice_0_cyclic_verts[col - 1].coords,
+            rows[0].coords,
+            columns[col].coords,
+            columns[col - 1].coords,
         )
 
     # Fill in col 0 of minArea and minDir, since it's a special case as there's
@@ -308,14 +296,14 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
     #
     # [2 marks]
 
-    # Along the first row, compute the next (min) area from the previous
+    # Along the first col, compute the next (min) area from the previous
     # row.
-    for row in range(1, len(slice_1_cyclic_verts)):
+    for row in range(1, len(rows)):
         min_dir[row][0] = Dir.PREV_ROW
         min_area[row][0] = min_area[row - 1][0] + triangleArea(
-            slice_1_cyclic_verts[row].coords,
-            slice_1_cyclic_verts[row - 1].coords,
-            slice_0_cyclic_verts[0].coords,
+            rows[row].coords,
+            rows[row - 1].coords,
+            columns[0].coords,
         )
 
     # Fill in the remaining entries of minArea and minDir.  This is very
@@ -323,33 +311,29 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
     #
     # [2 marks]
 
-    for row in range(1, len(slice_1_cyclic_verts)):
-        for col in range(1, len(slice_0_cyclic_verts)):
-            previous_areas = (
-                # Previous row.
-                min_area[row - 1][col]
-                + triangleArea(
-                    slice_1_cyclic_verts[row].coords,
-                    slice_0_cyclic_verts[col].coords,
-                    slice_1_cyclic_verts[row - 1].coords,
-                ),
-                # Previous column.
-                min_area[row][col - 1]
-                + triangleArea(
-                    slice_1_cyclic_verts[row].coords,
-                    slice_0_cyclic_verts[col].coords,
-                    slice_0_cyclic_verts[col - 1].coords,
-                ),
+    for row in range(1, len(rows)):
+        for col in range(1, len(columns)):
+            previous_row_area = min_area[row - 1][col] + triangleArea(
+                rows[row].coords,
+                columns[col].coords,
+                rows[row - 1].coords,
             )
 
-            min_area[row][col] = min(previous_areas)
+            previous_col_area = min_area[row][col - 1] + triangleArea(
+                rows[row].coords,
+                columns[col].coords,
+                columns[col - 1].coords,
+            )
 
             # If the areas are the same, default to going to the previous
-            # column.
-            if previous_areas[0] < previous_areas[1]:
+            # column to match the behaviour shown in next comment about
+            # creating a debugging table.
+            if previous_row_area < previous_col_area:
                 min_dir[row][col] = Dir.PREV_ROW
+                min_area[row][col] = previous_row_area
             else:
                 min_dir[row][col] = Dir.PREV_COL
+                min_area[row][col] = previous_col_area
 
     # It's useful for debugging at this point to print out the minArea
     # and minDir arrays together.  For example, print a table in which
@@ -382,27 +366,19 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
     # Print out the minArea and minDir arrays together in a table.
 
     def print_area_direction_table():
-        """Print out the minArea and minDir arrays together in a tabular format
+        """Print out the minArea and minDir arrays together in a tabular format.
 
         For example, print a table in which each element contains the integer
         minArea and a line (- or |) to indicate from which direction the
         previous min-area came from.
         """
-        print()
-
         # Printing the header row.
-        print(" ", end="")
-        for col in range(len(slice_0_cyclic_verts)):
-            print(f"{col:>7}", end="")
-            print("   ", end="")
-        print()
+        print(" " + "".join(f"{col:>7}   " for col in range(len(columns))))
 
         # Printing subsequent rows.
-        for row in range(len(slice_1_cyclic_verts)):
-            # Printing the row number.
+        for row in range(len(rows)):
             print(row, end="")
-
-            for col in range(len(slice_0_cyclic_verts)):
+            for col in range(len(columns)):
                 if min_dir[row][col] == Dir.PREV_ROW:
                     direction_symbol = "|"
                 elif min_dir[row][col] == Dir.PREV_COL:
@@ -410,9 +386,8 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
                 else:
                     direction_symbol = "."
                 print(
-                    f"{min_area[row][col]:>7.1f}", end=f" {direction_symbol} "
+                    f"{min_area[row][col]:>7.1f} {direction_symbol} ", end=""
                 )
-
             print()
 
     # print_area_direction_table()
@@ -434,21 +409,20 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
 
     triangles: list[Triangle] = []
 
-    row = len(slice_1_cyclic_verts) - 1
-    col = len(slice_0_cyclic_verts) - 1
+    row = len(rows) - 1
+    col = len(columns) - 1
 
     while row > 0 or col > 0:
         common_triangle_verts = (
-            slice_1_cyclic_verts[row],
-            slice_0_cyclic_verts[col],
+            rows[row],
+            columns[col],
         )
 
         if min_dir[row][col] == Dir.PREV_ROW:
-            third_triangle_vertex = slice_1_cyclic_verts[row - 1]
+            third_triangle_vertex = rows[row - 1]
             row -= 1
         elif min_dir[row][col] == Dir.PREV_COL:
-            # Previous column.
-            third_triangle_vertex = slice_0_cyclic_verts[col - 1]
+            third_triangle_vertex = columns[col - 1]
             col -= 1
         else:
             raise Exception("Should not get to this point.")
@@ -459,6 +433,14 @@ def buildTriangles(slice_0: Slice, slice_1: Slice):
         )
 
         triangles.append(Triangle(triangle_verts))
+
+    # Printing the area of the miniumum-area triangulation to compare against
+    # peers.
+    area_of_triangulation = sum(
+        triangleArea(*(v.coords for v in t.verts)) for t in triangles
+    )
+
+    print(f"Area of Minimum Area Triangulation: {area_of_triangulation:.1f}")
 
     # Return a list of the triangles that you constructed
 
@@ -482,8 +464,7 @@ fovyDelta = None
 
 
 def display(_wait=False):
-    """Displays the window"""
-
+    """Display the window."""
     # Handle any events that have occurred
 
     glfw.poll_events()
@@ -641,8 +622,7 @@ def display(_wait=False):
 
 
 def drawText(coords, text):
-    """Draws text"""
-
+    """Draw text."""
     if haveGlutForFonts:
         glRasterPos3fv(coords)
         for ch in text:
@@ -650,7 +630,7 @@ def drawText(coords, text):
 
 
 def keyCallback(_window, key, _scancode, action, _mods):
-    """Handles keyboard input"""
+    """Handle keyboard input."""
     global currentSlice
     global showCurrentSlice
     global allTriangles
@@ -714,7 +694,7 @@ def keyCallback(_window, key, _scancode, action, _mods):
 
 
 def windowReshapeCallback(_window, newWidth, newHeight):
-    """Handles window reshape"""
+    """Handle window reshape."""
     global windowWidth, windowHeight
 
     windowWidth = newWidth
@@ -727,7 +707,7 @@ button = None
 
 
 def mouseButtonCallback(window, btn, action, _keyModifiers):
-    """Handles mouse click/release"""
+    """Handle mouse click/release."""
     global button
     global initX
     global initY
@@ -764,7 +744,7 @@ mousePositionChanged = False
 
 
 def mouseMovementCallback(_window, _x, _y):
-    """Handles mouse motion
+    """Handle mouse motion.
 
     We don't want to transform the image and
     redraw with each tiny mouse movement.  Instead, just record the fact
@@ -779,7 +759,7 @@ def mouseMovementCallback(_window, _x, _y):
 
 
 def actOnMouseMovement(window, button, x, y):
-
+    """Act on mouse movement."""
     global currentImage, rotationAngle, rotationAxis, fovyDelta
 
     if button == glfw.MOUSE_BUTTON_LEFT:
@@ -873,27 +853,27 @@ def actOnMouseMovement(window, button, x, y):
 
 
 def add(v0, v1):
-
+    """Add two vectors."""
     return [v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]]
 
 
 def subtract(v0: list[float], v1: list[float]):
-
+    """Subtract two vectors."""
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
 
 
 def scalarMult(k, v):
-
+    """Multiply a vector by a scalar."""
     return [k * v[0], k * v[1], k * v[2]]
 
 
 def dotProduct(v0, v1):
-
+    """Compute the dot product of two vectors."""
     return v0[0] * v1[0] + v0[1] * v1[1] + v0[2] * v1[2]
 
 
 def crossProduct(v0, v1):
-
+    """Compute the cross product of two vectors."""
     return [
         v0[1] * v1[2] - v0[2] * v1[1],
         v0[2] * v1[0] - v0[0] * v1[2],
@@ -902,12 +882,12 @@ def crossProduct(v0, v1):
 
 
 def length(v: list[float]):
-
+    """Compute the length of a vector."""
     return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 
 def normalize(v):
-
+    """Normalize a vector."""
     d = length(v)
 
     if d > 0.0001:
@@ -917,13 +897,15 @@ def normalize(v):
 
 
 def triangleArea(v0: list[float], v1: list[float], v2: list[float]):
+    """Compute the area of a triangle defined by 3 vectors."""
     return 0.5 * length(crossProduct(subtract(v1, v0), subtract(v2, v0)))
 
 
-def rotateVector(
-    v, angle, axis
-):  # rotate v by angle about axis (axis must be unit length)
+def rotateVector(v, angle, axis):
+    """Rotate a vector about an axis by an angle.
 
+    Rotate v by angle about axis (axis must be unit length)
+    """
     cosAngle = math.cos(angle)
     sinAngle = math.sin(angle)
 
@@ -935,6 +917,11 @@ def rotateVector(
         v[1] * cosAngle + cross[1] * sinAngle + axis[1] * dot,
         v[2] * cosAngle + cross[2] * sinAngle + axis[2] * dot,
     ]
+
+
+def distance(v0: list[float], v1: list[float]):
+    """Calculate the distance between two points."""
+    return length(subtract(v0, v1))
 
 
 # Read slices from a file
@@ -955,7 +942,7 @@ def rotateVector(
 
 
 def readSlices(f):
-
+    """Read slices from a file."""
     lines = f.readlines()
 
     numSlices = int(lines[0])
@@ -985,11 +972,8 @@ def readSlices(f):
     return slices
 
 
-# Initialize GLFW and run the main event loop
-
-
 def main():
-
+    """Initialize GLFW and run the main event loop."""
     global window, allSlices, mousePositionChanged
 
     # Check command-line args

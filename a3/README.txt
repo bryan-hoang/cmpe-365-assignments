@@ -14,3 +14,6 @@ Comments for TA:
     - `pydocstyle`
     - `flake8`
   - modified with some additional type hints for a better developer experience
+  - `haveGlutForFonts` has been set to True to help with visualizing.
+  - motified with a new `distance` function defined in terms to `length` and
+    `subtract` to aid with readability.
